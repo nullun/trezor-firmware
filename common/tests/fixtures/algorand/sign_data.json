@@ -1,0 +1,60 @@
+{
+  "setup": {
+    "mnemonic": "all all all all all all all all all all all all",
+    "passphrase": ""
+  },
+  "tests": [
+    {
+      "description": "ARC-60: simple data signing",
+      "parameters": {
+        "path": "m/44'/283'/0'/0'/0'",
+        "data": "7b226d657373616765223a2268656c6c6f227d",
+        "domain": "example.com",
+        "auth_data": "a379a6f6eeafb9a55e378c118034e2751e682fab9f2d30ab13d2125586ce1947",
+        "request_id": null
+      },
+      "result": {
+        "expected_signature": "03edf6832c187172a006b235f2789336752a2e7eab6a7b12753c1a0bb7ec71a3bc05f33d16e944c082901421929aa99ce37c8ac330858392e7ab475106612708"
+      }
+    },
+    {
+      "description": "ARC-60: data signing with request_id",
+      "parameters": {
+        "path": "m/44'/283'/0'/0'/0'",
+        "data": "7b22616374696f6e223a226c6f67696e222c227473223a313730303030303030307d",
+        "domain": "myapp.example.org",
+        "auth_data": "5409e964681b3c8c5414f57b11d2651e3cea51347f0d2549fa8867b7b0efefe8",
+        "request_id": "req-abc-123"
+      },
+      "result": {
+        "expected_signature": "500bc112ce206ad2c8491234e66b8f9e349cf7c50cfcf524132b570905fac4c3321a41268f9b9a62f486713430fd6327cb2524cefca0157d45b32a4831b05e0f"
+      }
+    },
+    {
+      "description": "ARC-60: extended auth_data with FIDO2-style flags and signCount",
+      "parameters": {
+        "path": "m/44'/283'/0'/0'/0'",
+        "data": "7b226f726967696e223a2268747470733a2f2f776562617574686e2e6578616d706c652e636f6d222c2274797065223a22776562617574686e2e637265617465227d",
+        "domain": "webauthn.example.com",
+        "auth_data": "b381f15847f026842106119a2a21d729320bd2ece4d59bdcf5b59ada5b6b7e300100000000",
+        "request_id": null
+      },
+      "result": {
+        "expected_signature": "5a4e203b93941ea80dd22dee8f5ae0e6340bbc59526109c8f1b2d23e8c438f7402fbe98e4be385802f50c26978892afbf405158bf5d31272904de44d3504af00"
+      }
+    },
+    {
+      "description": "ARC-60: CAIP-122 style authentication payload",
+      "parameters": {
+        "path": "m/44'/283'/0'/0'/0'",
+        "data": "7b226163636f756e745f61646472657373223a22414c474f5f414444524553535f504c414345484f4c444552222c22636861696e5f6964223a22323833222c22646f6d61696e223a22646170702e6578616d706c652e696f222c226e6f6e6365223a2259574a6a5a47566d222c2273746174656d656e74223a225369676e20746f2061757468656e746963617465222c2274797065223a2265643235353139222c22757269223a2268747470733a2f2f646170702e6578616d706c652e696f222c2276657273696f6e223a2231227d",
+        "domain": "dapp.example.io",
+        "auth_data": "60a8a668dfd28ed57b70d3e5d66cd6218bf83daf4a4fcb6a4b121a373b13a248",
+        "request_id": null
+      },
+      "result": {
+        "expected_signature": "50febef442b7f8f727f6a43d96c738974df126c5ce5450372e01f57da7789196a2cf07f3ab78c7f1cef9ef6344ef1f494bb4d5a33678aca273b20678843bb602"
+      }
+    }
+  ]
+}
