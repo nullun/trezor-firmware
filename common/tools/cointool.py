@@ -139,6 +139,7 @@ MAKO_FILTERS = {
 }
 
 ALTCOIN_PREFIXES = (
+    "algorand",
     "cardano",
     "eos",
     "ethereum",

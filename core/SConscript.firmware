@@ -729,7 +729,8 @@ if FROZEN:
             SOURCE_PY_DIR + 'trezor/enums/Stellar*.py',
             SOURCE_PY_DIR + 'trezor/enums/Tezos*.py',
             SOURCE_PY_DIR + 'trezor/enums/Zcash*.py',
-            SOURCE_PY_DIR + 'trezor/enums/Tron*.py'
+            SOURCE_PY_DIR + 'trezor/enums/Tron*.py',
+            SOURCE_PY_DIR + 'trezor/enums/Algorand*.py'
         ] + (
             SOURCE_PY_DEBUG_ENUMS if PYOPT != '0' else []
         ) + (
@@ -850,6 +851,9 @@ if FROZEN:
 
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/tron/*.py'))
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Tron*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/algorand/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Algorand*.py'))
 
     source_mpy = env.FrozenModule(
         source=SOURCE_PY,

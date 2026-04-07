@@ -239,6 +239,7 @@ if TYPE_CHECKING:
         BLE = 22
         NFC = 23
         Tron = 24
+        Algorand = 25
 
     class SdProtectOperationType(IntEnum):
         DISABLE = 0
@@ -628,6 +629,16 @@ if TYPE_CHECKING:
         EosTxActionRequest = 603
         EosTxActionAck = 604
         EosSignedTx = 605
+        AlgorandGetPublicKey = 606
+        AlgorandPublicKey = 607
+        AlgorandGetAddress = 608
+        AlgorandAddress = 609
+        AlgorandSignTx = 610
+        AlgorandTxRequest = 611
+        AlgorandTxAck = 612
+        AlgorandTxSignature = 613
+        AlgorandSignData = 614
+        AlgorandDataSignature = 615
         WebAuthnListResidentCredentials = 800
         WebAuthnCredentials = 801
         WebAuthnAddResidentCredential = 802

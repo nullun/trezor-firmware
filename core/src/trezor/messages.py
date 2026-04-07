@@ -74,56 +74,6 @@ if TYPE_CHECKING:
     from trezor.enums import TronResourceCode  # noqa: F401
     from trezor.enums import WordRequestType  # noqa: F401
 
-    class BenchmarkListNames(protobuf.MessageType):
-
-        @classmethod
-        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkListNames"]:
-            return isinstance(msg, cls)
-
-    class BenchmarkNames(protobuf.MessageType):
-        names: "list[str]"
-
-        def __init__(
-            self,
-            *,
-            names: "list[str] | None" = None,
-        ) -> None:
-            pass
-
-        @classmethod
-        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkNames"]:
-            return isinstance(msg, cls)
-
-    class BenchmarkRun(protobuf.MessageType):
-        name: "str | None"
-
-        def __init__(
-            self,
-            *,
-            name: "str | None" = None,
-        ) -> None:
-            pass
-
-        @classmethod
-        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkRun"]:
-            return isinstance(msg, cls)
-
-    class BenchmarkResult(protobuf.MessageType):
-        value: "str | None"
-        unit: "str | None"
-
-        def __init__(
-            self,
-            *,
-            value: "str | None" = None,
-            unit: "str | None" = None,
-        ) -> None:
-            pass
-
-        @classmethod
-        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkResult"]:
-            return isinstance(msg, cls)
-
     class Success(protobuf.MessageType):
         message: "str"
 
@@ -362,6 +312,218 @@ if TYPE_CHECKING:
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["CoinPurchaseMemo"]:
+            return isinstance(msg, cls)
+
+    class AlgorandGetPublicKey(protobuf.MessageType):
+        address_n: "list[int]"
+        show_display: "bool | None"
+
+        def __init__(
+            self,
+            *,
+            address_n: "list[int] | None" = None,
+            show_display: "bool | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandGetPublicKey"]:
+            return isinstance(msg, cls)
+
+    class AlgorandPublicKey(protobuf.MessageType):
+        public_key: "AnyBytes"
+
+        def __init__(
+            self,
+            *,
+            public_key: "AnyBytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandPublicKey"]:
+            return isinstance(msg, cls)
+
+    class AlgorandGetAddress(protobuf.MessageType):
+        address_n: "list[int]"
+        show_display: "bool | None"
+        chunkify: "bool | None"
+
+        def __init__(
+            self,
+            *,
+            address_n: "list[int] | None" = None,
+            show_display: "bool | None" = None,
+            chunkify: "bool | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandGetAddress"]:
+            return isinstance(msg, cls)
+
+    class AlgorandAddress(protobuf.MessageType):
+        address: "str"
+
+        def __init__(
+            self,
+            *,
+            address: "str",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandAddress"]:
+            return isinstance(msg, cls)
+
+    class AlgorandSignTx(protobuf.MessageType):
+        address_n: "list[int]"
+        serialized_tx: "AnyBytes"
+        group_size: "int"
+        group_index: "int"
+
+        def __init__(
+            self,
+            *,
+            serialized_tx: "AnyBytes",
+            address_n: "list[int] | None" = None,
+            group_size: "int | None" = None,
+            group_index: "int | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandSignTx"]:
+            return isinstance(msg, cls)
+
+    class AlgorandTxRequest(protobuf.MessageType):
+        group_index: "int | None"
+
+        def __init__(
+            self,
+            *,
+            group_index: "int | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandTxRequest"]:
+            return isinstance(msg, cls)
+
+    class AlgorandTxAck(protobuf.MessageType):
+        serialized_tx: "AnyBytes"
+
+        def __init__(
+            self,
+            *,
+            serialized_tx: "AnyBytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandTxAck"]:
+            return isinstance(msg, cls)
+
+    class AlgorandTxSignature(protobuf.MessageType):
+        signature: "AnyBytes"
+        group_signatures: "list[AnyBytes]"
+
+        def __init__(
+            self,
+            *,
+            signature: "AnyBytes",
+            group_signatures: "list[AnyBytes] | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandTxSignature"]:
+            return isinstance(msg, cls)
+
+    class AlgorandSignData(protobuf.MessageType):
+        address_n: "list[int]"
+        data: "AnyBytes"
+        domain: "str"
+        auth_data: "AnyBytes | None"
+        request_id: "str | None"
+
+        def __init__(
+            self,
+            *,
+            data: "AnyBytes",
+            domain: "str",
+            address_n: "list[int] | None" = None,
+            auth_data: "AnyBytes | None" = None,
+            request_id: "str | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandSignData"]:
+            return isinstance(msg, cls)
+
+    class AlgorandDataSignature(protobuf.MessageType):
+        signature: "AnyBytes"
+
+        def __init__(
+            self,
+            *,
+            signature: "AnyBytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandDataSignature"]:
+            return isinstance(msg, cls)
+
+    class BenchmarkListNames(protobuf.MessageType):
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkListNames"]:
+            return isinstance(msg, cls)
+
+    class BenchmarkNames(protobuf.MessageType):
+        names: "list[str]"
+
+        def __init__(
+            self,
+            *,
+            names: "list[str] | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkNames"]:
+            return isinstance(msg, cls)
+
+    class BenchmarkRun(protobuf.MessageType):
+        name: "str | None"
+
+        def __init__(
+            self,
+            *,
+            name: "str | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkRun"]:
+            return isinstance(msg, cls)
+
+    class BenchmarkResult(protobuf.MessageType):
+        value: "str | None"
+        unit: "str | None"
+
+        def __init__(
+            self,
+            *,
+            value: "str | None" = None,
+            unit: "str | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkResult"]:
             return isinstance(msg, cls)
 
     class MultisigRedeemScriptType(protobuf.MessageType):

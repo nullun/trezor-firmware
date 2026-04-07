@@ -123,6 +123,7 @@ def get_features() -> Features:
         f.capabilities = [
             Capability.Bitcoin,
             Capability.Bitcoin_like,
+            Capability.Algorand,
             Capability.Binance,
             Capability.Cardano,
             Capability.Crypto,

@@ -269,6 +269,7 @@ class Capability(IntEnum):
     BLE = 22
     NFC = 23
     Tron = 24
+    Algorand = 25
 
 
 class SdProtectOperationType(IntEnum):
@@ -684,6 +685,16 @@ class MessageType(IntEnum):
     EosTxActionRequest = 603
     EosTxActionAck = 604
     EosSignedTx = 605
+    AlgorandGetPublicKey = 606
+    AlgorandPublicKey = 607
+    AlgorandGetAddress = 608
+    AlgorandAddress = 609
+    AlgorandSignTx = 610
+    AlgorandTxRequest = 611
+    AlgorandTxAck = 612
+    AlgorandTxSignature = 613
+    AlgorandSignData = 614
+    AlgorandDataSignature = 615
     WebAuthnListResidentCredentials = 800
     WebAuthnCredentials = 801
     WebAuthnAddResidentCredential = 802
@@ -727,55 +738,6 @@ class MessageType(IntEnum):
     BenchmarkResult = 9103
     TelemetryGet = 1100
     Telemetry = 1101
-
-
-class BenchmarkListNames(protobuf.MessageType):
-    MESSAGE_WIRE_TYPE = 9100
-
-
-class BenchmarkNames(protobuf.MessageType):
-    MESSAGE_WIRE_TYPE = 9101
-    FIELDS = {
-        1: protobuf.Field("names", "string", repeated=True, required=False, default=None),
-    }
-
-    def __init__(
-        self,
-        *,
-        names: Optional[Sequence["str"]] = None,
-    ) -> None:
-        self.names: Sequence["str"] = names if names is not None else []
-
-
-class BenchmarkRun(protobuf.MessageType):
-    MESSAGE_WIRE_TYPE = 9102
-    FIELDS = {
-        1: protobuf.Field("name", "string", repeated=False, required=False, default=None),
-    }
-
-    def __init__(
-        self,
-        *,
-        name: Optional["str"] = None,
-    ) -> None:
-        self.name = name
-
-
-class BenchmarkResult(protobuf.MessageType):
-    MESSAGE_WIRE_TYPE = 9103
-    FIELDS = {
-        1: protobuf.Field("value", "string", repeated=False, required=False, default=None),
-        3: protobuf.Field("unit", "string", repeated=False, required=False, default=None),
-    }
-
-    def __init__(
-        self,
-        *,
-        value: Optional["str"] = None,
-        unit: Optional["str"] = None,
-    ) -> None:
-        self.value = value
-        self.unit = unit
 
 
 class Success(protobuf.MessageType):
@@ -1066,6 +1028,228 @@ class CoinPurchaseMemo(protobuf.MessageType):
         self.amount = amount
         self.address = address
         self.mac = mac
+
+
+class AlgorandGetPublicKey(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 606
+    FIELDS = {
+        1: protobuf.Field("address_n", "uint32", repeated=True, required=False, default=None),
+        2: protobuf.Field("show_display", "bool", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        address_n: Optional[Sequence["int"]] = None,
+        show_display: Optional["bool"] = None,
+    ) -> None:
+        self.address_n: Sequence["int"] = address_n if address_n is not None else []
+        self.show_display = show_display
+
+
+class AlgorandPublicKey(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 607
+    FIELDS = {
+        1: protobuf.Field("public_key", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        public_key: "bytes",
+    ) -> None:
+        self.public_key = public_key
+
+
+class AlgorandGetAddress(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 608
+    FIELDS = {
+        1: protobuf.Field("address_n", "uint32", repeated=True, required=False, default=None),
+        2: protobuf.Field("show_display", "bool", repeated=False, required=False, default=None),
+        3: protobuf.Field("chunkify", "bool", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        address_n: Optional[Sequence["int"]] = None,
+        show_display: Optional["bool"] = None,
+        chunkify: Optional["bool"] = None,
+    ) -> None:
+        self.address_n: Sequence["int"] = address_n if address_n is not None else []
+        self.show_display = show_display
+        self.chunkify = chunkify
+
+
+class AlgorandAddress(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 609
+    FIELDS = {
+        1: protobuf.Field("address", "string", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        address: "str",
+    ) -> None:
+        self.address = address
+
+
+class AlgorandSignTx(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 610
+    FIELDS = {
+        1: protobuf.Field("address_n", "uint32", repeated=True, required=False, default=None),
+        2: protobuf.Field("serialized_tx", "bytes", repeated=False, required=True),
+        3: protobuf.Field("group_size", "uint32", repeated=False, required=False, default=1),
+        4: protobuf.Field("group_index", "uint32", repeated=False, required=False, default=0),
+    }
+
+    def __init__(
+        self,
+        *,
+        serialized_tx: "bytes",
+        address_n: Optional[Sequence["int"]] = None,
+        group_size: Optional["int"] = 1,
+        group_index: Optional["int"] = 0,
+    ) -> None:
+        self.address_n: Sequence["int"] = address_n if address_n is not None else []
+        self.serialized_tx = serialized_tx
+        self.group_size = group_size
+        self.group_index = group_index
+
+
+class AlgorandTxRequest(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 611
+    FIELDS = {
+        1: protobuf.Field("group_index", "uint32", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        group_index: Optional["int"] = None,
+    ) -> None:
+        self.group_index = group_index
+
+
+class AlgorandTxAck(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 612
+    FIELDS = {
+        1: protobuf.Field("serialized_tx", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        serialized_tx: "bytes",
+    ) -> None:
+        self.serialized_tx = serialized_tx
+
+
+class AlgorandTxSignature(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 613
+    FIELDS = {
+        1: protobuf.Field("signature", "bytes", repeated=False, required=True),
+        2: protobuf.Field("group_signatures", "bytes", repeated=True, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        signature: "bytes",
+        group_signatures: Optional[Sequence["bytes"]] = None,
+    ) -> None:
+        self.group_signatures: Sequence["bytes"] = group_signatures if group_signatures is not None else []
+        self.signature = signature
+
+
+class AlgorandSignData(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 614
+    FIELDS = {
+        1: protobuf.Field("address_n", "uint32", repeated=True, required=False, default=None),
+        2: protobuf.Field("data", "bytes", repeated=False, required=True),
+        3: protobuf.Field("domain", "string", repeated=False, required=True),
+        4: protobuf.Field("auth_data", "bytes", repeated=False, required=False, default=None),
+        5: protobuf.Field("request_id", "string", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        data: "bytes",
+        domain: "str",
+        address_n: Optional[Sequence["int"]] = None,
+        auth_data: Optional["bytes"] = None,
+        request_id: Optional["str"] = None,
+    ) -> None:
+        self.address_n: Sequence["int"] = address_n if address_n is not None else []
+        self.data = data
+        self.domain = domain
+        self.auth_data = auth_data
+        self.request_id = request_id
+
+
+class AlgorandDataSignature(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 615
+    FIELDS = {
+        1: protobuf.Field("signature", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        signature: "bytes",
+    ) -> None:
+        self.signature = signature
+
+
+class BenchmarkListNames(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 9100
+
+
+class BenchmarkNames(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 9101
+    FIELDS = {
+        1: protobuf.Field("names", "string", repeated=True, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        names: Optional[Sequence["str"]] = None,
+    ) -> None:
+        self.names: Sequence["str"] = names if names is not None else []
+
+
+class BenchmarkRun(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 9102
+    FIELDS = {
+        1: protobuf.Field("name", "string", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        name: Optional["str"] = None,
+    ) -> None:
+        self.name = name
+
+
+class BenchmarkResult(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 9103
+    FIELDS = {
+        1: protobuf.Field("value", "string", repeated=False, required=False, default=None),
+        3: protobuf.Field("unit", "string", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        value: Optional["str"] = None,
+        unit: Optional["str"] = None,
+    ) -> None:
+        self.value = value
+        self.unit = unit
 
 
 class MultisigRedeemScriptType(protobuf.MessageType):

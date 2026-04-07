@@ -317,6 +317,18 @@ enum MessageType {
     MessageType_EosTxActionAck = 604 [(wire_in) = true];
     MessageType_EosSignedTx = 605 [(wire_out) = true];
 
+    // Algorand
+    MessageType_AlgorandGetPublicKey = 606 [(wire_in) = true];
+    MessageType_AlgorandPublicKey = 607 [(wire_out) = true];
+    MessageType_AlgorandGetAddress = 608 [(wire_in) = true];
+    MessageType_AlgorandAddress = 609 [(wire_out) = true];
+    MessageType_AlgorandSignTx = 610 [(wire_in) = true];
+    MessageType_AlgorandTxRequest = 611 [(wire_out) = true];
+    MessageType_AlgorandTxAck = 612 [(wire_in) = true];
+    MessageType_AlgorandTxSignature = 613 [(wire_out) = true];
+    MessageType_AlgorandSignData = 614 [(wire_in) = true];
+    MessageType_AlgorandDataSignature = 615 [(wire_out) = true];
+
     // BNB Beacon Chain (deprecated)
     reserved 700 to 709;
 

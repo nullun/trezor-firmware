@@ -811,6 +811,9 @@ if FROZEN:
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/common/definitions_constants.py'))
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/DefinitionType.py'))
 
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/algorand/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Algorand*.py'))
+
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/cardano/*.py'))
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/cardano/*/*.py'))
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Cardano*.py'))

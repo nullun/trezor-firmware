@@ -1,0 +1,114 @@
+syntax = "proto2";
+package hw.trezor.messages.algorand;
+
+import "messages-common.proto";
+
+option java_outer_classname = "TrezorMessageAlgorand";
+option java_package = "com.satoshilabs.trezor.lib.protobuf";
+
+/**
+ * Request: Ask device for Algorand public key
+ * @start
+ * @next AlgorandPublicKey
+ * @next Failure
+ */
+message AlgorandGetPublicKey {
+    repeated uint32 address_n = 1;
+    optional bool show_display = 2;
+}
+
+/**
+ * Response: Contains public key derived from device private seed
+ * @end
+ */
+message AlgorandPublicKey {
+    required bytes public_key = 1;  // 32 bytes, Ed25519
+}
+
+/**
+ * Request: Ask device for Algorand address
+ * @start
+ * @next AlgorandAddress
+ * @next Failure
+ */
+message AlgorandGetAddress {
+    repeated uint32 address_n = 1;
+    optional bool show_display = 2;
+    optional bool chunkify = 3;
+}
+
+/**
+ * Response: Contains Algorand address
+ * @end
+ */
+message AlgorandAddress {
+    required string address = 1;  // 58-char Base32 address
+}
+
+/**
+ * Request: Ask device to sign Algorand transaction(s)
+ * For single transactions: set group_size = 1, group_index = 0.
+ * For atomic groups: set group_size = N (2-16), group_index = 0..N-1.
+ * The host sends one AlgorandSignTx per transaction in the group.
+ * @start
+ * @next AlgorandTxRequest
+ * @next Failure
+ */
+message AlgorandSignTx {
+    repeated uint32 address_n = 1;       // BIP-32 path
+    required bytes serialized_tx = 2;    // Canonical MsgPack-encoded transaction
+    optional uint32 group_size = 3 [default = 1];   // Total transactions in group (1 = no group)
+    optional uint32 group_index = 4 [default = 0];  // Index of this transaction in the group (0-based)
+}
+
+/**
+ * Response: Device has accepted a group transaction and requests the next one
+ * @end
+ */
+message AlgorandTxRequest {
+    optional uint32 group_index = 1;     // Index of the next expected transaction
+}
+
+/**
+ * Request: Host sends the next transaction in the group
+ * @start
+ * @next AlgorandTxRequest
+ * @next AlgorandTxSignature
+ * @next Failure
+ */
+message AlgorandTxAck {
+    required bytes serialized_tx = 1;    // Canonical MsgPack-encoded transaction
+}
+
+/**
+ * Response: Contains the transaction signature(s)
+ * For single transactions: one signature.
+ * For groups: one signature per transaction where sender matches the derived key.
+ * @end
+ */
+message AlgorandTxSignature {
+    required bytes signature = 1;            // 64 bytes, Ed25519 signature (first/only)
+    repeated bytes group_signatures = 2;     // For groups: signature per tx (empty bytes if sender != signer)
+}
+
+/**
+ * Request: Ask device to sign arbitrary data (ARC-60 / CAIP-122)
+ * @start
+ * @next AlgorandDataSignature
+ * @next Failure
+ */
+message AlgorandSignData {
+    repeated uint32 address_n = 1;
+    required bytes data = 2;            // Canonical JSON data (utf-8)
+    required string domain = 3;         // Domain string (printable ASCII)
+    optional bytes auth_data = 4;       // Authenticated data
+    optional string request_id = 5;     // Optional request ID (base64)
+}
+
+/**
+ * Response: Contains the data signature
+ * @end
+ */
+message AlgorandDataSignature {
+    required bytes signature = 1;  // 64 bytes, Ed25519 signature
+}

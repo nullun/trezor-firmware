@@ -507,6 +507,26 @@ pub enum MessageType {
     MessageType_EosTxActionAck = 604,
     // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_EosSignedTx)
     MessageType_EosSignedTx = 605,
+    // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_AlgorandGetPublicKey)
+    MessageType_AlgorandGetPublicKey = 606,
+    // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_AlgorandPublicKey)
+    MessageType_AlgorandPublicKey = 607,
+    // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_AlgorandGetAddress)
+    MessageType_AlgorandGetAddress = 608,
+    // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_AlgorandAddress)
+    MessageType_AlgorandAddress = 609,
+    // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_AlgorandSignTx)
+    MessageType_AlgorandSignTx = 610,
+    // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_AlgorandTxRequest)
+    MessageType_AlgorandTxRequest = 611,
+    // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_AlgorandTxAck)
+    MessageType_AlgorandTxAck = 612,
+    // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_AlgorandTxSignature)
+    MessageType_AlgorandTxSignature = 613,
+    // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_AlgorandSignData)
+    MessageType_AlgorandSignData = 614,
+    // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_AlgorandDataSignature)
+    MessageType_AlgorandDataSignature = 615,
     // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_WebAuthnListResidentCredentials)
     MessageType_WebAuthnListResidentCredentials = 800,
     // @@protoc_insertion_point(enum_value:hw.trezor.messages.MessageType.MessageType_WebAuthnCredentials)
@@ -844,6 +864,16 @@ impl ::protobuf::Enum for MessageType {
             603 => ::std::option::Option::Some(MessageType::MessageType_EosTxActionRequest),
             604 => ::std::option::Option::Some(MessageType::MessageType_EosTxActionAck),
             605 => ::std::option::Option::Some(MessageType::MessageType_EosSignedTx),
+            606 => ::std::option::Option::Some(MessageType::MessageType_AlgorandGetPublicKey),
+            607 => ::std::option::Option::Some(MessageType::MessageType_AlgorandPublicKey),
+            608 => ::std::option::Option::Some(MessageType::MessageType_AlgorandGetAddress),
+            609 => ::std::option::Option::Some(MessageType::MessageType_AlgorandAddress),
+            610 => ::std::option::Option::Some(MessageType::MessageType_AlgorandSignTx),
+            611 => ::std::option::Option::Some(MessageType::MessageType_AlgorandTxRequest),
+            612 => ::std::option::Option::Some(MessageType::MessageType_AlgorandTxAck),
+            613 => ::std::option::Option::Some(MessageType::MessageType_AlgorandTxSignature),
+            614 => ::std::option::Option::Some(MessageType::MessageType_AlgorandSignData),
+            615 => ::std::option::Option::Some(MessageType::MessageType_AlgorandDataSignature),
             800 => ::std::option::Option::Some(MessageType::MessageType_WebAuthnListResidentCredentials),
             801 => ::std::option::Option::Some(MessageType::MessageType_WebAuthnCredentials),
             802 => ::std::option::Option::Some(MessageType::MessageType_WebAuthnAddResidentCredential),
@@ -1133,6 +1163,16 @@ impl ::protobuf::Enum for MessageType {
             "MessageType_EosTxActionRequest" => ::std::option::Option::Some(MessageType::MessageType_EosTxActionRequest),
             "MessageType_EosTxActionAck" => ::std::option::Option::Some(MessageType::MessageType_EosTxActionAck),
             "MessageType_EosSignedTx" => ::std::option::Option::Some(MessageType::MessageType_EosSignedTx),
+            "MessageType_AlgorandGetPublicKey" => ::std::option::Option::Some(MessageType::MessageType_AlgorandGetPublicKey),
+            "MessageType_AlgorandPublicKey" => ::std::option::Option::Some(MessageType::MessageType_AlgorandPublicKey),
+            "MessageType_AlgorandGetAddress" => ::std::option::Option::Some(MessageType::MessageType_AlgorandGetAddress),
+            "MessageType_AlgorandAddress" => ::std::option::Option::Some(MessageType::MessageType_AlgorandAddress),
+            "MessageType_AlgorandSignTx" => ::std::option::Option::Some(MessageType::MessageType_AlgorandSignTx),
+            "MessageType_AlgorandTxRequest" => ::std::option::Option::Some(MessageType::MessageType_AlgorandTxRequest),
+            "MessageType_AlgorandTxAck" => ::std::option::Option::Some(MessageType::MessageType_AlgorandTxAck),
+            "MessageType_AlgorandTxSignature" => ::std::option::Option::Some(MessageType::MessageType_AlgorandTxSignature),
+            "MessageType_AlgorandSignData" => ::std::option::Option::Some(MessageType::MessageType_AlgorandSignData),
+            "MessageType_AlgorandDataSignature" => ::std::option::Option::Some(MessageType::MessageType_AlgorandDataSignature),
             "MessageType_WebAuthnListResidentCredentials" => ::std::option::Option::Some(MessageType::MessageType_WebAuthnListResidentCredentials),
             "MessageType_WebAuthnCredentials" => ::std::option::Option::Some(MessageType::MessageType_WebAuthnCredentials),
             "MessageType_WebAuthnAddResidentCredential" => ::std::option::Option::Some(MessageType::MessageType_WebAuthnAddResidentCredential),
@@ -1421,6 +1461,16 @@ impl ::protobuf::Enum for MessageType {
         MessageType::MessageType_EosTxActionRequest,
         MessageType::MessageType_EosTxActionAck,
         MessageType::MessageType_EosSignedTx,
+        MessageType::MessageType_AlgorandGetPublicKey,
+        MessageType::MessageType_AlgorandPublicKey,
+        MessageType::MessageType_AlgorandGetAddress,
+        MessageType::MessageType_AlgorandAddress,
+        MessageType::MessageType_AlgorandSignTx,
+        MessageType::MessageType_AlgorandTxRequest,
+        MessageType::MessageType_AlgorandTxAck,
+        MessageType::MessageType_AlgorandTxSignature,
+        MessageType::MessageType_AlgorandSignData,
+        MessageType::MessageType_AlgorandDataSignature,
         MessageType::MessageType_WebAuthnListResidentCredentials,
         MessageType::MessageType_WebAuthnCredentials,
         MessageType::MessageType_WebAuthnAddResidentCredential,
@@ -1715,49 +1765,59 @@ impl ::protobuf::EnumFull for MessageType {
             MessageType::MessageType_EosTxActionRequest => 237,
             MessageType::MessageType_EosTxActionAck => 238,
             MessageType::MessageType_EosSignedTx => 239,
-            MessageType::MessageType_WebAuthnListResidentCredentials => 240,
-            MessageType::MessageType_WebAuthnCredentials => 241,
-            MessageType::MessageType_WebAuthnAddResidentCredential => 242,
-            MessageType::MessageType_WebAuthnRemoveResidentCredential => 243,
-            MessageType::MessageType_WebAuthnCredentialsAck => 244,
-            MessageType::MessageType_SolanaGetPublicKey => 245,
-            MessageType::MessageType_SolanaPublicKey => 246,
-            MessageType::MessageType_SolanaGetAddress => 247,
-            MessageType::MessageType_SolanaAddress => 248,
-            MessageType::MessageType_SolanaSignTx => 249,
-            MessageType::MessageType_SolanaTxSignature => 250,
-            MessageType::MessageType_ThpCreateNewSession => 251,
-            MessageType::MessageType_ThpCredentialRequest => 252,
-            MessageType::MessageType_ThpCredentialResponse => 253,
-            MessageType::MessageType_NostrGetPubkey => 254,
-            MessageType::MessageType_NostrPubkey => 255,
-            MessageType::MessageType_NostrSignEvent => 256,
-            MessageType::MessageType_NostrEventSignature => 257,
-            MessageType::MessageType_EvoluGetNode => 258,
-            MessageType::MessageType_EvoluNode => 259,
-            MessageType::MessageType_EvoluSignRegistrationRequest => 260,
-            MessageType::MessageType_EvoluRegistrationRequest => 261,
-            MessageType::MessageType_EvoluGetDelegatedIdentityKey => 262,
-            MessageType::MessageType_EvoluDelegatedIdentityKey => 263,
-            MessageType::MessageType_EvoluIndexManagement => 264,
-            MessageType::MessageType_EvoluIndexManagementResponse => 265,
-            MessageType::MessageType_TronGetAddress => 266,
-            MessageType::MessageType_TronAddress => 267,
-            MessageType::MessageType_TronSignTx => 268,
-            MessageType::MessageType_TronSignature => 269,
-            MessageType::MessageType_TronContractRequest => 270,
-            MessageType::MessageType_TronTransferContract => 271,
-            MessageType::MessageType_TronTriggerSmartContract => 272,
-            MessageType::MessageType_TronFreezeBalanceV2Contract => 273,
-            MessageType::MessageType_TronUnfreezeBalanceV2Contract => 274,
-            MessageType::MessageType_TronWithdrawUnfreeze => 275,
-            MessageType::MessageType_TronVoteWitnessContract => 276,
-            MessageType::MessageType_BenchmarkListNames => 277,
-            MessageType::MessageType_BenchmarkNames => 278,
-            MessageType::MessageType_BenchmarkRun => 279,
-            MessageType::MessageType_BenchmarkResult => 280,
-            MessageType::MessageType_TelemetryGet => 281,
-            MessageType::MessageType_Telemetry => 282,
+            MessageType::MessageType_AlgorandGetPublicKey => 240,
+            MessageType::MessageType_AlgorandPublicKey => 241,
+            MessageType::MessageType_AlgorandGetAddress => 242,
+            MessageType::MessageType_AlgorandAddress => 243,
+            MessageType::MessageType_AlgorandSignTx => 244,
+            MessageType::MessageType_AlgorandTxRequest => 245,
+            MessageType::MessageType_AlgorandTxAck => 246,
+            MessageType::MessageType_AlgorandTxSignature => 247,
+            MessageType::MessageType_AlgorandSignData => 248,
+            MessageType::MessageType_AlgorandDataSignature => 249,
+            MessageType::MessageType_WebAuthnListResidentCredentials => 250,
+            MessageType::MessageType_WebAuthnCredentials => 251,
+            MessageType::MessageType_WebAuthnAddResidentCredential => 252,
+            MessageType::MessageType_WebAuthnRemoveResidentCredential => 253,
+            MessageType::MessageType_WebAuthnCredentialsAck => 254,
+            MessageType::MessageType_SolanaGetPublicKey => 255,
+            MessageType::MessageType_SolanaPublicKey => 256,
+            MessageType::MessageType_SolanaGetAddress => 257,
+            MessageType::MessageType_SolanaAddress => 258,
+            MessageType::MessageType_SolanaSignTx => 259,
+            MessageType::MessageType_SolanaTxSignature => 260,
+            MessageType::MessageType_ThpCreateNewSession => 261,
+            MessageType::MessageType_ThpCredentialRequest => 262,
+            MessageType::MessageType_ThpCredentialResponse => 263,
+            MessageType::MessageType_NostrGetPubkey => 264,
+            MessageType::MessageType_NostrPubkey => 265,
+            MessageType::MessageType_NostrSignEvent => 266,
+            MessageType::MessageType_NostrEventSignature => 267,
+            MessageType::MessageType_EvoluGetNode => 268,
+            MessageType::MessageType_EvoluNode => 269,
+            MessageType::MessageType_EvoluSignRegistrationRequest => 270,
+            MessageType::MessageType_EvoluRegistrationRequest => 271,
+            MessageType::MessageType_EvoluGetDelegatedIdentityKey => 272,
+            MessageType::MessageType_EvoluDelegatedIdentityKey => 273,
+            MessageType::MessageType_EvoluIndexManagement => 274,
+            MessageType::MessageType_EvoluIndexManagementResponse => 275,
+            MessageType::MessageType_TronGetAddress => 276,
+            MessageType::MessageType_TronAddress => 277,
+            MessageType::MessageType_TronSignTx => 278,
+            MessageType::MessageType_TronSignature => 279,
+            MessageType::MessageType_TronContractRequest => 280,
+            MessageType::MessageType_TronTransferContract => 281,
+            MessageType::MessageType_TronTriggerSmartContract => 282,
+            MessageType::MessageType_TronFreezeBalanceV2Contract => 283,
+            MessageType::MessageType_TronUnfreezeBalanceV2Contract => 284,
+            MessageType::MessageType_TronWithdrawUnfreeze => 285,
+            MessageType::MessageType_TronVoteWitnessContract => 286,
+            MessageType::MessageType_BenchmarkListNames => 287,
+            MessageType::MessageType_BenchmarkNames => 288,
+            MessageType::MessageType_BenchmarkRun => 289,
+            MessageType::MessageType_BenchmarkResult => 290,
+            MessageType::MessageType_TelemetryGet => 291,
+            MessageType::MessageType_Telemetry => 292,
         };
         Self::enum_descriptor().value_by_index(index)
     }
@@ -1776,7 +1836,7 @@ impl MessageType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0emessages.proto\x12\x12hw.trezor.messages\x1a\roptions.proto*\xa9c\
+    \n\x0emessages.proto\x12\x12hw.trezor.messages\x1a\roptions.proto*\xcdf\
     \n\x0bMessageType\x12(\n\x16MessageType_Initialize\x10\0\x1a\x0c\x80\xa6\
     \x1d\x01\xb0\xb5\x18\x01\x90\xb5\x18\x01\x12\x1e\n\x10MessageType_Ping\
     \x10\x01\x1a\x08\x80\xa6\x1d\x01\x90\xb5\x18\x01\x12%\n\x13MessageType_S\
@@ -2052,62 +2112,72 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     x\x10\xda\x04\x1a\x04\x90\xb5\x18\x01\x12)\n\x1eMessageType_EosTxActionR\
     equest\x10\xdb\x04\x1a\x04\x98\xb5\x18\x01\x12%\n\x1aMessageType_EosTxAc\
     tionAck\x10\xdc\x04\x1a\x04\x90\xb5\x18\x01\x12\"\n\x17MessageType_EosSi\
-    gnedTx\x10\xdd\x04\x1a\x04\x98\xb5\x18\x01\x126\n+MessageType_WebAuthnLi\
-    stResidentCredentials\x10\xa0\x06\x1a\x04\x90\xb5\x18\x01\x12*\n\x1fMess\
-    ageType_WebAuthnCredentials\x10\xa1\x06\x1a\x04\x98\xb5\x18\x01\x124\n)M\
-    essageType_WebAuthnAddResidentCredential\x10\xa2\x06\x1a\x04\x90\xb5\x18\
-    \x01\x127\n,MessageType_WebAuthnRemoveResidentCredential\x10\xa3\x06\x1a\
-    \x04\x90\xb5\x18\x01\x12-\n\"MessageType_WebAuthnCredentialsAck\x10\xa4\
-    \x06\x1a\x04\x90\xb5\x18\x01\x12)\n\x1eMessageType_SolanaGetPublicKey\
-    \x10\x84\x07\x1a\x04\x90\xb5\x18\x01\x12&\n\x1bMessageType_SolanaPublicK\
-    ey\x10\x85\x07\x1a\x04\x98\xb5\x18\x01\x12'\n\x1cMessageType_SolanaGetAd\
-    dress\x10\x86\x07\x1a\x04\x90\xb5\x18\x01\x12$\n\x19MessageType_SolanaAd\
-    dress\x10\x87\x07\x1a\x04\x98\xb5\x18\x01\x12#\n\x18MessageType_SolanaSi\
-    gnTx\x10\x88\x07\x1a\x04\x90\xb5\x18\x01\x12(\n\x1dMessageType_SolanaTxS\
-    ignature\x10\x89\x07\x1a\x04\x98\xb5\x18\x01\x12.\n\x1fMessageType_ThpCr\
-    eateNewSession\x10\xe8\x07\x1a\x08\x80\xa6\x1d\x01\x90\xb5\x18\x01\x12/\
-    \n\x20MessageType_ThpCredentialRequest\x10\xf8\x07\x1a\x08\x80\xa6\x1d\
-    \x01\x90\xb5\x18\x01\x120\n!MessageType_ThpCredentialResponse\x10\xf9\
-    \x07\x1a\x08\x80\xa6\x1d\x01\x98\xb5\x18\x01\x12%\n\x1aMessageType_Nostr\
-    GetPubkey\x10\xd1\x0f\x1a\x04\x90\xb5\x18\x01\x12\"\n\x17MessageType_Nos\
-    trPubkey\x10\xd2\x0f\x1a\x04\x98\xb5\x18\x01\x12%\n\x1aMessageType_Nostr\
-    SignEvent\x10\xd3\x0f\x1a\x04\x90\xb5\x18\x01\x12*\n\x1fMessageType_Nost\
-    rEventSignature\x10\xd4\x0f\x1a\x04\x98\xb5\x18\x01\x12'\n\x18MessageTyp\
-    e_EvoluGetNode\x10\xb4\x10\x1a\x08\x80\xa6\x1d\x01\x90\xb5\x18\x01\x12$\
-    \n\x15MessageType_EvoluNode\x10\xb5\x10\x1a\x08\x80\xa6\x1d\x01\x98\xb5\
-    \x18\x01\x127\n(MessageType_EvoluSignRegistrationRequest\x10\xb6\x10\x1a\
-    \x08\x80\xa6\x1d\x01\x90\xb5\x18\x01\x123\n$MessageType_EvoluRegistratio\
-    nRequest\x10\xb7\x10\x1a\x08\x80\xa6\x1d\x01\x98\xb5\x18\x01\x127\n(Mess\
-    ageType_EvoluGetDelegatedIdentityKey\x10\xb8\x10\x1a\x08\x80\xa6\x1d\x01\
-    \x90\xb5\x18\x01\x124\n%MessageType_EvoluDelegatedIdentityKey\x10\xb9\
-    \x10\x1a\x08\x80\xa6\x1d\x01\x98\xb5\x18\x01\x12/\n\x20MessageType_Evolu\
-    IndexManagement\x10\xba\x10\x1a\x08\x80\xa6\x1d\x01\x90\xb5\x18\x01\x127\
-    \n(MessageType_EvoluIndexManagementResponse\x10\xbb\x10\x1a\x08\x80\xa6\
-    \x1d\x01\x98\xb5\x18\x01\x12%\n\x1aMessageType_TronGetAddress\x10\x98\
-    \x11\x1a\x04\x90\xb5\x18\x01\x12\"\n\x17MessageType_TronAddress\x10\x99\
-    \x11\x1a\x04\x98\xb5\x18\x01\x12!\n\x16MessageType_TronSignTx\x10\x9a\
-    \x11\x1a\x04\x90\xb5\x18\x01\x12$\n\x19MessageType_TronSignature\x10\x9b\
-    \x11\x1a\x04\x98\xb5\x18\x01\x12*\n\x1fMessageType_TronContractRequest\
-    \x10\x9c\x11\x1a\x04\x98\xb5\x18\x01\x12+\n\x20MessageType_TronTransferC\
-    ontract\x10\x9d\x11\x1a\x04\x90\xb5\x18\x01\x12/\n$MessageType_TronTrigg\
-    erSmartContract\x10\x9e\x11\x1a\x04\x90\xb5\x18\x01\x122\n'MessageType_T\
-    ronFreezeBalanceV2Contract\x10\x9f\x11\x1a\x04\x90\xb5\x18\x01\x124\n)Me\
-    ssageType_TronUnfreezeBalanceV2Contract\x10\xa0\x11\x1a\x04\x90\xb5\x18\
-    \x01\x12+\n\x20MessageType_TronWithdrawUnfreeze\x10\xa1\x11\x1a\x04\x90\
-    \xb5\x18\x01\x12.\n#MessageType_TronVoteWitnessContract\x10\xa2\x11\x1a\
-    \x04\x90\xb5\x18\x01\x12)\n\x1eMessageType_BenchmarkListNames\x10\x8cG\
-    \x1a\x04\x80\xa6\x1d\x01\x12%\n\x1aMessageType_BenchmarkNames\x10\x8dG\
-    \x1a\x04\x80\xa6\x1d\x01\x12#\n\x18MessageType_BenchmarkRun\x10\x8eG\x1a\
-    \x04\x80\xa6\x1d\x01\x12&\n\x1bMessageType_BenchmarkResult\x10\x8fG\x1a\
-    \x04\x80\xa6\x1d\x01\x12'\n\x18MessageType_TelemetryGet\x10\xcc\x08\x1a\
-    \x08\x80\xa6\x1d\x01\x90\xb5\x18\x01\x12$\n\x15MessageType_Telemetry\x10\
-    \xcd\x08\x1a\x08\x80\xa6\x1d\x01\x98\xb5\x18\x01\x1a\x08\xc8\xf3\x18\x01\
-    \xd0\xf3\x18\x01\"\x04\x08Z\x10\\\"\x04\x08G\x10J\"\x04\x08r\x10z\"\x05\
-    \x08{\x10\x95\x01\"\x06\x08\xdb\x01\x10\xdb\x01\"\x06\x08\xe0\x01\x10\
-    \xe0\x01\"\x06\x08\xac\x02\x10\xb0\x02\"\x06\x08\xb5\x02\x10\xb8\x02\"\
-    \x06\x08\xbc\x05\x10\xc5\x05\"\x06\x08\xe9\x07\x10\xf7\x07\"\x06\x08\xfa\
-    \x07\x10\xcb\x08B8\n#com.satoshilabs.trezor.lib.protobufB\rTrezorMessage\
-    \x80\xa6\x1d\x01\
+    gnedTx\x10\xdd\x04\x1a\x04\x98\xb5\x18\x01\x12+\n\x20MessageType_Algoran\
+    dGetPublicKey\x10\xde\x04\x1a\x04\x90\xb5\x18\x01\x12(\n\x1dMessageType_\
+    AlgorandPublicKey\x10\xdf\x04\x1a\x04\x98\xb5\x18\x01\x12)\n\x1eMessageT\
+    ype_AlgorandGetAddress\x10\xe0\x04\x1a\x04\x90\xb5\x18\x01\x12&\n\x1bMes\
+    sageType_AlgorandAddress\x10\xe1\x04\x1a\x04\x98\xb5\x18\x01\x12%\n\x1aM\
+    essageType_AlgorandSignTx\x10\xe2\x04\x1a\x04\x90\xb5\x18\x01\x12(\n\x1d\
+    MessageType_AlgorandTxRequest\x10\xe3\x04\x1a\x04\x98\xb5\x18\x01\x12$\n\
+    \x19MessageType_AlgorandTxAck\x10\xe4\x04\x1a\x04\x90\xb5\x18\x01\x12*\n\
+    \x1fMessageType_AlgorandTxSignature\x10\xe5\x04\x1a\x04\x98\xb5\x18\x01\
+    \x12'\n\x1cMessageType_AlgorandSignData\x10\xe6\x04\x1a\x04\x90\xb5\x18\
+    \x01\x12,\n!MessageType_AlgorandDataSignature\x10\xe7\x04\x1a\x04\x98\
+    \xb5\x18\x01\x126\n+MessageType_WebAuthnListResidentCredentials\x10\xa0\
+    \x06\x1a\x04\x90\xb5\x18\x01\x12*\n\x1fMessageType_WebAuthnCredentials\
+    \x10\xa1\x06\x1a\x04\x98\xb5\x18\x01\x124\n)MessageType_WebAuthnAddResid\
+    entCredential\x10\xa2\x06\x1a\x04\x90\xb5\x18\x01\x127\n,MessageType_Web\
+    AuthnRemoveResidentCredential\x10\xa3\x06\x1a\x04\x90\xb5\x18\x01\x12-\n\
+    \"MessageType_WebAuthnCredentialsAck\x10\xa4\x06\x1a\x04\x90\xb5\x18\x01\
+    \x12)\n\x1eMessageType_SolanaGetPublicKey\x10\x84\x07\x1a\x04\x90\xb5\
+    \x18\x01\x12&\n\x1bMessageType_SolanaPublicKey\x10\x85\x07\x1a\x04\x98\
+    \xb5\x18\x01\x12'\n\x1cMessageType_SolanaGetAddress\x10\x86\x07\x1a\x04\
+    \x90\xb5\x18\x01\x12$\n\x19MessageType_SolanaAddress\x10\x87\x07\x1a\x04\
+    \x98\xb5\x18\x01\x12#\n\x18MessageType_SolanaSignTx\x10\x88\x07\x1a\x04\
+    \x90\xb5\x18\x01\x12(\n\x1dMessageType_SolanaTxSignature\x10\x89\x07\x1a\
+    \x04\x98\xb5\x18\x01\x12.\n\x1fMessageType_ThpCreateNewSession\x10\xe8\
+    \x07\x1a\x08\x80\xa6\x1d\x01\x90\xb5\x18\x01\x12/\n\x20MessageType_ThpCr\
+    edentialRequest\x10\xf8\x07\x1a\x08\x80\xa6\x1d\x01\x90\xb5\x18\x01\x120\
+    \n!MessageType_ThpCredentialResponse\x10\xf9\x07\x1a\x08\x80\xa6\x1d\x01\
+    \x98\xb5\x18\x01\x12%\n\x1aMessageType_NostrGetPubkey\x10\xd1\x0f\x1a\
+    \x04\x90\xb5\x18\x01\x12\"\n\x17MessageType_NostrPubkey\x10\xd2\x0f\x1a\
+    \x04\x98\xb5\x18\x01\x12%\n\x1aMessageType_NostrSignEvent\x10\xd3\x0f\
+    \x1a\x04\x90\xb5\x18\x01\x12*\n\x1fMessageType_NostrEventSignature\x10\
+    \xd4\x0f\x1a\x04\x98\xb5\x18\x01\x12'\n\x18MessageType_EvoluGetNode\x10\
+    \xb4\x10\x1a\x08\x80\xa6\x1d\x01\x90\xb5\x18\x01\x12$\n\x15MessageType_E\
+    voluNode\x10\xb5\x10\x1a\x08\x80\xa6\x1d\x01\x98\xb5\x18\x01\x127\n(Mess\
+    ageType_EvoluSignRegistrationRequest\x10\xb6\x10\x1a\x08\x80\xa6\x1d\x01\
+    \x90\xb5\x18\x01\x123\n$MessageType_EvoluRegistrationRequest\x10\xb7\x10\
+    \x1a\x08\x80\xa6\x1d\x01\x98\xb5\x18\x01\x127\n(MessageType_EvoluGetDele\
+    gatedIdentityKey\x10\xb8\x10\x1a\x08\x80\xa6\x1d\x01\x90\xb5\x18\x01\x12\
+    4\n%MessageType_EvoluDelegatedIdentityKey\x10\xb9\x10\x1a\x08\x80\xa6\
+    \x1d\x01\x98\xb5\x18\x01\x12/\n\x20MessageType_EvoluIndexManagement\x10\
+    \xba\x10\x1a\x08\x80\xa6\x1d\x01\x90\xb5\x18\x01\x127\n(MessageType_Evol\
+    uIndexManagementResponse\x10\xbb\x10\x1a\x08\x80\xa6\x1d\x01\x98\xb5\x18\
+    \x01\x12%\n\x1aMessageType_TronGetAddress\x10\x98\x11\x1a\x04\x90\xb5\
+    \x18\x01\x12\"\n\x17MessageType_TronAddress\x10\x99\x11\x1a\x04\x98\xb5\
+    \x18\x01\x12!\n\x16MessageType_TronSignTx\x10\x9a\x11\x1a\x04\x90\xb5\
+    \x18\x01\x12$\n\x19MessageType_TronSignature\x10\x9b\x11\x1a\x04\x98\xb5\
+    \x18\x01\x12*\n\x1fMessageType_TronContractRequest\x10\x9c\x11\x1a\x04\
+    \x98\xb5\x18\x01\x12+\n\x20MessageType_TronTransferContract\x10\x9d\x11\
+    \x1a\x04\x90\xb5\x18\x01\x12/\n$MessageType_TronTriggerSmartContract\x10\
+    \x9e\x11\x1a\x04\x90\xb5\x18\x01\x122\n'MessageType_TronFreezeBalanceV2C\
+    ontract\x10\x9f\x11\x1a\x04\x90\xb5\x18\x01\x124\n)MessageType_TronUnfre\
+    ezeBalanceV2Contract\x10\xa0\x11\x1a\x04\x90\xb5\x18\x01\x12+\n\x20Messa\
+    geType_TronWithdrawUnfreeze\x10\xa1\x11\x1a\x04\x90\xb5\x18\x01\x12.\n#M\
+    essageType_TronVoteWitnessContract\x10\xa2\x11\x1a\x04\x90\xb5\x18\x01\
+    \x12)\n\x1eMessageType_BenchmarkListNames\x10\x8cG\x1a\x04\x80\xa6\x1d\
+    \x01\x12%\n\x1aMessageType_BenchmarkNames\x10\x8dG\x1a\x04\x80\xa6\x1d\
+    \x01\x12#\n\x18MessageType_BenchmarkRun\x10\x8eG\x1a\x04\x80\xa6\x1d\x01\
+    \x12&\n\x1bMessageType_BenchmarkResult\x10\x8fG\x1a\x04\x80\xa6\x1d\x01\
+    \x12'\n\x18MessageType_TelemetryGet\x10\xcc\x08\x1a\x08\x80\xa6\x1d\x01\
+    \x90\xb5\x18\x01\x12$\n\x15MessageType_Telemetry\x10\xcd\x08\x1a\x08\x80\
+    \xa6\x1d\x01\x98\xb5\x18\x01\x1a\x08\xc8\xf3\x18\x01\xd0\xf3\x18\x01\"\
+    \x04\x08Z\x10\\\"\x04\x08G\x10J\"\x04\x08r\x10z\"\x05\x08{\x10\x95\x01\"\
+    \x06\x08\xdb\x01\x10\xdb\x01\"\x06\x08\xe0\x01\x10\xe0\x01\"\x06\x08\xac\
+    \x02\x10\xb0\x02\"\x06\x08\xb5\x02\x10\xb8\x02\"\x06\x08\xbc\x05\x10\xc5\
+    \x05\"\x06\x08\xe9\x07\x10\xf7\x07\"\x06\x08\xfa\x07\x10\xcb\x08B8\n#com\
+    .satoshilabs.trezor.lib.protobufB\rTrezorMessage\x80\xa6\x1d\x01\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
