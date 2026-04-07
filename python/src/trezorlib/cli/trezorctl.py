@@ -39,6 +39,7 @@ from . import (
     PassphraseSource,
     SessionIdentifier,
     TrezorConnection,
+    algorand,
     benchmark,
     ble,
     btc,
@@ -85,6 +86,7 @@ COMMAND_ALIASES = {
     # currency name aliases:
     "eth": ethereum.cli,
     "ada": cardano.cli,
+    "algo": algorand.cli,
     "sol": solana.cli,
     "xmr": monero.cli,
     "xrp": ripple.cli,
@@ -433,6 +435,7 @@ cli.add_command(btc.cli)
 cli.add_command(cardano.cli)
 cli.add_command(crypto.cli)
 cli.add_command(device.cli)
+cli.add_command(algorand.cli)
 cli.add_command(eos.cli)
 cli.add_command(ethereum.cli)
 cli.add_command(evolu.cli)
