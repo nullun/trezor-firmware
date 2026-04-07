@@ -1322,3 +1322,41 @@ char* sha512_Data(const sha2_byte* data, size_t len, char digest[SHA512_DIGEST_S
 	sha512_Update(&context, data, len);
 	return sha512_End(&context, digest);
 }
+
+/*** SHA-512/256: *****************************************************/
+
+/* Initial hash value H for SHA-512/256 (FIPS 180-4) */
+static const sha2_word64 sha512_256_initial_hash_value[8] = {
+	0x22312194FC2BF72CULL, 0x9F555FA3C84C64C2ULL,
+	0x2393B86B6F53B151ULL, 0x963877195940EABDULL,
+	0x96283EE2A88EFFE3ULL, 0xBE5E1E2553863992ULL,
+	0x2B0199FC2C85B8AAULL, 0x0EB72DDC81C52CA2ULL,
+};
+
+void sha512_256_Init(SHA512_CTX* context) {
+	if (context == (SHA512_CTX*)0) {
+		return;
+	}
+	MEMCPY_BCOPY(context->state, sha512_256_initial_hash_value, SHA512_DIGEST_LENGTH);
+	memzero(context->buffer, SHA512_BLOCK_LENGTH);
+	context->bitcount[0] = context->bitcount[1] = 0;
+}
+
+void sha512_256_Update(SHA512_CTX* context, const uint8_t* data, size_t len) {
+	sha512_Update(context, data, len);
+}
+
+void sha512_256_Final(SHA512_CTX* context, uint8_t digest[SHA512_256_DIGEST_LENGTH]) {
+	uint8_t full_digest[SHA512_DIGEST_LENGTH] = {0};
+	sha512_Final(context, full_digest);
+	memcpy(digest, full_digest, SHA512_256_DIGEST_LENGTH);
+	memzero(full_digest + SHA512_256_DIGEST_LENGTH, SHA512_DIGEST_LENGTH - SHA512_256_DIGEST_LENGTH);
+	memzero(full_digest, sizeof(full_digest));
+}
+
+void sha512_256_Raw(const uint8_t* data, size_t len, uint8_t digest[SHA512_256_DIGEST_LENGTH]) {
+	SHA512_CTX	context = {0};
+	sha512_256_Init(&context);
+	sha512_256_Update(&context, data, len);
+	sha512_256_Final(&context, digest);
+}

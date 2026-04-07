@@ -64,6 +64,7 @@ static void wrapped_ui_wait_callback(uint32_t current, uint32_t total) {
 #include "modtrezorcrypto-sha3-256.h"
 #include "modtrezorcrypto-sha3-512.h"
 #include "modtrezorcrypto-sha512.h"
+#include "modtrezorcrypto-sha512_256.h"
 #include "modtrezorcrypto-shamir.h"
 #include "modtrezorcrypto-slip39.h"
 #ifdef USE_OPTIGA
@@ -129,6 +130,8 @@ STATIC const mp_rom_map_elem_t mp_module_trezorcrypto_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_sha1), MP_ROM_PTR(&mod_trezorcrypto_Sha1_type)},
     {MP_ROM_QSTR(MP_QSTR_sha256), MP_ROM_PTR(&mod_trezorcrypto_Sha256_type)},
     {MP_ROM_QSTR(MP_QSTR_sha512), MP_ROM_PTR(&mod_trezorcrypto_Sha512_type)},
+    {MP_ROM_QSTR(MP_QSTR_sha512_256),
+     MP_ROM_PTR(&mod_trezorcrypto_Sha512_256_type)},
     {MP_ROM_QSTR(MP_QSTR_sha3_256),
      MP_ROM_PTR(&mod_trezorcrypto_Sha3_256_type)},
     {MP_ROM_QSTR(MP_QSTR_sha3_512),

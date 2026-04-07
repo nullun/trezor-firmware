@@ -9,4 +9,5 @@ from trezorcrypto import (  # noqa: F401
     sha3_512,
     sha256,
     sha512,
+    sha512_256,
 )

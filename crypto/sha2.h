@@ -108,4 +108,11 @@ char* sha512_End(SHA512_CTX*, char[SHA512_DIGEST_STRING_LENGTH]);
 void sha512_Raw(const uint8_t*, size_t, uint8_t[SHA512_DIGEST_LENGTH]);
 char* sha512_Data(const uint8_t*, size_t, char[SHA512_DIGEST_STRING_LENGTH]);
 
+#define SHA512_256_DIGEST_LENGTH 32
+
+void sha512_256_Init(SHA512_CTX *ctx);
+void sha512_256_Update(SHA512_CTX *ctx, const uint8_t *data, size_t len);
+void sha512_256_Final(SHA512_CTX *ctx, uint8_t digest[SHA512_256_DIGEST_LENGTH]);
+void sha512_256_Raw(const uint8_t *data, size_t len, uint8_t digest[SHA512_256_DIGEST_LENGTH]);
+
 #endif
