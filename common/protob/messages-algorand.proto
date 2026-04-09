@@ -59,6 +59,7 @@ message AlgorandSignTx {
     required bytes serialized_tx = 2;    // Canonical MsgPack-encoded transaction
     optional uint32 group_size = 3 [default = 1];   // Total transactions in group (1 = no group)
     optional uint32 group_index = 4 [default = 0];  // Index of this transaction in the group (0-based)
+    optional uint32 signature_type = 5 [default = 0]; // 0 = ED25519 (default), 1 = FALCON_DET1024
 }
 
 /**
@@ -87,8 +88,38 @@ message AlgorandTxAck {
  * @end
  */
 message AlgorandTxSignature {
-    required bytes signature = 1;            // 64 bytes, Ed25519 signature (first/only)
+    required bytes signature = 1;            // Ed25519: 64 bytes; FALCON: variable (up to 1423 bytes)
     repeated bytes group_signatures = 2;     // For groups: signature per tx (empty bytes if sender != signer)
+    optional uint32 signature_type = 3;      // Echoes back the signature type used (0 = ED25519, 1 = FALCON_DET1024)
+}
+
+/**
+ * Request: Ask device for the FALCON-DET1024 controlled Algorand address
+ * The device performs the full derivation in one round-trip: it derives
+ * the FALCON keypair from the HD seed, embeds the public key in a
+ * pre-compiled TEAL LogicSig template and iterates a one-byte counter
+ * until the resulting program hash is off the Ed25519 curve.
+ * @start
+ * @next AlgorandFalconAddress
+ * @next Failure
+ */
+message AlgorandGetFalconAddress {
+    repeated uint32 address_n = 1;
+    optional bool show_display = 2;
+    optional bool chunkify = 3;
+}
+
+/**
+ * Response: The FALCON-controlled Algorand address and the metadata the
+ * host needs to reconstruct the LogicSig program for transaction
+ * submission.
+ * @end
+ */
+message AlgorandFalconAddress {
+    required string address = 1;        // 58-char Algorand LogicSig contract account
+    required bytes public_key = 2;      // 1793-byte FALCON-DET1024 public key
+    optional uint32 counter = 3;        // Counter byte spliced into the bytecblock slot
+    optional uint32 teal_version = 4;   // TEAL template version (e.g. 12)
 }
 
 /**

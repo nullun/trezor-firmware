@@ -381,6 +381,7 @@ if TYPE_CHECKING:
         serialized_tx: "AnyBytes"
         group_size: "int"
         group_index: "int"
+        signature_type: "int"
 
         def __init__(
             self,
@@ -389,6 +390,7 @@ if TYPE_CHECKING:
             address_n: "list[int] | None" = None,
             group_size: "int | None" = None,
             group_index: "int | None" = None,
+            signature_type: "int | None" = None,
         ) -> None:
             pass
 
@@ -427,17 +429,57 @@ if TYPE_CHECKING:
     class AlgorandTxSignature(protobuf.MessageType):
         signature: "AnyBytes"
         group_signatures: "list[AnyBytes]"
+        signature_type: "int | None"
 
         def __init__(
             self,
             *,
             signature: "AnyBytes",
             group_signatures: "list[AnyBytes] | None" = None,
+            signature_type: "int | None" = None,
         ) -> None:
             pass
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandTxSignature"]:
+            return isinstance(msg, cls)
+
+    class AlgorandGetFalconAddress(protobuf.MessageType):
+        address_n: "list[int]"
+        show_display: "bool | None"
+        chunkify: "bool | None"
+
+        def __init__(
+            self,
+            *,
+            address_n: "list[int] | None" = None,
+            show_display: "bool | None" = None,
+            chunkify: "bool | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandGetFalconAddress"]:
+            return isinstance(msg, cls)
+
+    class AlgorandFalconAddress(protobuf.MessageType):
+        address: "str"
+        public_key: "AnyBytes"
+        counter: "int | None"
+        teal_version: "int | None"
+
+        def __init__(
+            self,
+            *,
+            address: "str",
+            public_key: "AnyBytes",
+            counter: "int | None" = None,
+            teal_version: "int | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["AlgorandFalconAddress"]:
             return isinstance(msg, cls)
 
     class AlgorandSignData(protobuf.MessageType):

@@ -695,6 +695,8 @@ class MessageType(IntEnum):
     AlgorandTxSignature = 613
     AlgorandSignData = 614
     AlgorandDataSignature = 615
+    AlgorandGetFalconAddress = 616
+    AlgorandFalconAddress = 617
     WebAuthnListResidentCredentials = 800
     WebAuthnCredentials = 801
     WebAuthnAddResidentCredential = 802
@@ -1102,6 +1104,7 @@ class AlgorandSignTx(protobuf.MessageType):
         2: protobuf.Field("serialized_tx", "bytes", repeated=False, required=True),
         3: protobuf.Field("group_size", "uint32", repeated=False, required=False, default=1),
         4: protobuf.Field("group_index", "uint32", repeated=False, required=False, default=0),
+        5: protobuf.Field("signature_type", "uint32", repeated=False, required=False, default=0),
     }
 
     def __init__(
@@ -1111,11 +1114,13 @@ class AlgorandSignTx(protobuf.MessageType):
         address_n: Optional[Sequence["int"]] = None,
         group_size: Optional["int"] = 1,
         group_index: Optional["int"] = 0,
+        signature_type: Optional["int"] = 0,
     ) -> None:
         self.address_n: Sequence["int"] = address_n if address_n is not None else []
         self.serialized_tx = serialized_tx
         self.group_size = group_size
         self.group_index = group_index
+        self.signature_type = signature_type
 
 
 class AlgorandTxRequest(protobuf.MessageType):
@@ -1151,6 +1156,7 @@ class AlgorandTxSignature(protobuf.MessageType):
     FIELDS = {
         1: protobuf.Field("signature", "bytes", repeated=False, required=True),
         2: protobuf.Field("group_signatures", "bytes", repeated=True, required=False, default=None),
+        3: protobuf.Field("signature_type", "uint32", repeated=False, required=False, default=None),
     }
 
     def __init__(
@@ -1158,9 +1164,54 @@ class AlgorandTxSignature(protobuf.MessageType):
         *,
         signature: "bytes",
         group_signatures: Optional[Sequence["bytes"]] = None,
+        signature_type: Optional["int"] = None,
     ) -> None:
         self.group_signatures: Sequence["bytes"] = group_signatures if group_signatures is not None else []
         self.signature = signature
+        self.signature_type = signature_type
+
+
+class AlgorandGetFalconAddress(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 616
+    FIELDS = {
+        1: protobuf.Field("address_n", "uint32", repeated=True, required=False, default=None),
+        2: protobuf.Field("show_display", "bool", repeated=False, required=False, default=None),
+        3: protobuf.Field("chunkify", "bool", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        address_n: Optional[Sequence["int"]] = None,
+        show_display: Optional["bool"] = None,
+        chunkify: Optional["bool"] = None,
+    ) -> None:
+        self.address_n: Sequence["int"] = address_n if address_n is not None else []
+        self.show_display = show_display
+        self.chunkify = chunkify
+
+
+class AlgorandFalconAddress(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 617
+    FIELDS = {
+        1: protobuf.Field("address", "string", repeated=False, required=True),
+        2: protobuf.Field("public_key", "bytes", repeated=False, required=True),
+        3: protobuf.Field("counter", "uint32", repeated=False, required=False, default=None),
+        4: protobuf.Field("teal_version", "uint32", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        address: "str",
+        public_key: "bytes",
+        counter: Optional["int"] = None,
+        teal_version: Optional["int"] = None,
+    ) -> None:
+        self.address = address
+        self.public_key = public_key
+        self.counter = counter
+        self.teal_version = teal_version
 
 
 class AlgorandSignData(protobuf.MessageType):

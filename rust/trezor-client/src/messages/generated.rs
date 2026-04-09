@@ -106,6 +106,8 @@ trezor_message_impl! {
     AlgorandTxSignature => MessageType_AlgorandTxSignature,
     AlgorandSignData => MessageType_AlgorandSignData,
     AlgorandDataSignature => MessageType_AlgorandDataSignature,
+    AlgorandGetFalconAddress => MessageType_AlgorandGetFalconAddress,
+    AlgorandFalconAddress => MessageType_AlgorandFalconAddress,
     ThpCreateNewSession => MessageType_ThpCreateNewSession,
     ThpCredentialRequest => MessageType_ThpCredentialRequest,
     ThpCredentialResponse => MessageType_ThpCredentialResponse,

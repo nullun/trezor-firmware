@@ -719,6 +719,8 @@ pub struct AlgorandSignTx {
     pub group_size: ::std::option::Option<u32>,
     // @@protoc_insertion_point(field:hw.trezor.messages.algorand.AlgorandSignTx.group_index)
     pub group_index: ::std::option::Option<u32>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.algorand.AlgorandSignTx.signature_type)
+    pub signature_type: ::std::option::Option<u32>,
     // special fields
     // @@protoc_insertion_point(special_field:hw.trezor.messages.algorand.AlgorandSignTx.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -809,8 +811,27 @@ impl AlgorandSignTx {
         self.group_index = ::std::option::Option::Some(v);
     }
 
+    // optional uint32 signature_type = 5;
+
+    pub fn signature_type(&self) -> u32 {
+        self.signature_type.unwrap_or(0u32)
+    }
+
+    pub fn clear_signature_type(&mut self) {
+        self.signature_type = ::std::option::Option::None;
+    }
+
+    pub fn has_signature_type(&self) -> bool {
+        self.signature_type.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_signature_type(&mut self, v: u32) {
+        self.signature_type = ::std::option::Option::Some(v);
+    }
+
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(4);
+        let mut fields = ::std::vec::Vec::with_capacity(5);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
             "address_n",
@@ -831,6 +852,11 @@ impl AlgorandSignTx {
             "group_index",
             |m: &AlgorandSignTx| { &m.group_index },
             |m: &mut AlgorandSignTx| { &mut m.group_index },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "signature_type",
+            |m: &AlgorandSignTx| { &m.signature_type },
+            |m: &mut AlgorandSignTx| { &mut m.signature_type },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<AlgorandSignTx>(
             "AlgorandSignTx",
@@ -868,6 +894,9 @@ impl ::protobuf::Message for AlgorandSignTx {
                 32 => {
                     self.group_index = ::std::option::Option::Some(is.read_uint32()?);
                 },
+                40 => {
+                    self.signature_type = ::std::option::Option::Some(is.read_uint32()?);
+                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -892,6 +921,9 @@ impl ::protobuf::Message for AlgorandSignTx {
         if let Some(v) = self.group_index {
             my_size += ::protobuf::rt::uint32_size(4, v);
         }
+        if let Some(v) = self.signature_type {
+            my_size += ::protobuf::rt::uint32_size(5, v);
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
@@ -909,6 +941,9 @@ impl ::protobuf::Message for AlgorandSignTx {
         }
         if let Some(v) = self.group_index {
             os.write_uint32(4, v)?;
+        }
+        if let Some(v) = self.signature_type {
+            os.write_uint32(5, v)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -931,6 +966,7 @@ impl ::protobuf::Message for AlgorandSignTx {
         self.serialized_tx = ::std::option::Option::None;
         self.group_size = ::std::option::Option::None;
         self.group_index = ::std::option::Option::None;
+        self.signature_type = ::std::option::Option::None;
         self.special_fields.clear();
     }
 
@@ -940,6 +976,7 @@ impl ::protobuf::Message for AlgorandSignTx {
             serialized_tx: ::std::option::Option::None,
             group_size: ::std::option::Option::None,
             group_index: ::std::option::Option::None,
+            signature_type: ::std::option::Option::None,
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -1273,6 +1310,8 @@ pub struct AlgorandTxSignature {
     pub signature: ::std::option::Option<::std::vec::Vec<u8>>,
     // @@protoc_insertion_point(field:hw.trezor.messages.algorand.AlgorandTxSignature.group_signatures)
     pub group_signatures: ::std::vec::Vec<::std::vec::Vec<u8>>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.algorand.AlgorandTxSignature.signature_type)
+    pub signature_type: ::std::option::Option<u32>,
     // special fields
     // @@protoc_insertion_point(special_field:hw.trezor.messages.algorand.AlgorandTxSignature.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -1325,8 +1364,27 @@ impl AlgorandTxSignature {
         self.signature.take().unwrap_or_else(|| ::std::vec::Vec::new())
     }
 
+    // optional uint32 signature_type = 3;
+
+    pub fn signature_type(&self) -> u32 {
+        self.signature_type.unwrap_or(0)
+    }
+
+    pub fn clear_signature_type(&mut self) {
+        self.signature_type = ::std::option::Option::None;
+    }
+
+    pub fn has_signature_type(&self) -> bool {
+        self.signature_type.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_signature_type(&mut self, v: u32) {
+        self.signature_type = ::std::option::Option::Some(v);
+    }
+
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(2);
+        let mut fields = ::std::vec::Vec::with_capacity(3);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
             "signature",
@@ -1337,6 +1395,11 @@ impl AlgorandTxSignature {
             "group_signatures",
             |m: &AlgorandTxSignature| { &m.group_signatures },
             |m: &mut AlgorandTxSignature| { &mut m.group_signatures },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "signature_type",
+            |m: &AlgorandTxSignature| { &m.signature_type },
+            |m: &mut AlgorandTxSignature| { &mut m.signature_type },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<AlgorandTxSignature>(
             "AlgorandTxSignature",
@@ -1365,6 +1428,9 @@ impl ::protobuf::Message for AlgorandTxSignature {
                 18 => {
                     self.group_signatures.push(is.read_bytes()?);
                 },
+                24 => {
+                    self.signature_type = ::std::option::Option::Some(is.read_uint32()?);
+                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -1383,6 +1449,9 @@ impl ::protobuf::Message for AlgorandTxSignature {
         for value in &self.group_signatures {
             my_size += ::protobuf::rt::bytes_size(2, &value);
         };
+        if let Some(v) = self.signature_type {
+            my_size += ::protobuf::rt::uint32_size(3, v);
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
@@ -1395,6 +1464,9 @@ impl ::protobuf::Message for AlgorandTxSignature {
         for v in &self.group_signatures {
             os.write_bytes(2, &v)?;
         };
+        if let Some(v) = self.signature_type {
+            os.write_uint32(3, v)?;
+        }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -1414,6 +1486,7 @@ impl ::protobuf::Message for AlgorandTxSignature {
     fn clear(&mut self) {
         self.signature = ::std::option::Option::None;
         self.group_signatures.clear();
+        self.signature_type = ::std::option::Option::None;
         self.special_fields.clear();
     }
 
@@ -1421,6 +1494,7 @@ impl ::protobuf::Message for AlgorandTxSignature {
         static instance: AlgorandTxSignature = AlgorandTxSignature {
             signature: ::std::option::Option::None,
             group_signatures: ::std::vec::Vec::new(),
+            signature_type: ::std::option::Option::None,
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -1441,6 +1515,497 @@ impl ::std::fmt::Display for AlgorandTxSignature {
 }
 
 impl ::protobuf::reflect::ProtobufValue for AlgorandTxSignature {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:hw.trezor.messages.algorand.AlgorandGetFalconAddress)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct AlgorandGetFalconAddress {
+    // message fields
+    // @@protoc_insertion_point(field:hw.trezor.messages.algorand.AlgorandGetFalconAddress.address_n)
+    pub address_n: ::std::vec::Vec<u32>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.algorand.AlgorandGetFalconAddress.show_display)
+    pub show_display: ::std::option::Option<bool>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.algorand.AlgorandGetFalconAddress.chunkify)
+    pub chunkify: ::std::option::Option<bool>,
+    // special fields
+    // @@protoc_insertion_point(special_field:hw.trezor.messages.algorand.AlgorandGetFalconAddress.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a AlgorandGetFalconAddress {
+    fn default() -> &'a AlgorandGetFalconAddress {
+        <AlgorandGetFalconAddress as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl AlgorandGetFalconAddress {
+    pub fn new() -> AlgorandGetFalconAddress {
+        ::std::default::Default::default()
+    }
+
+    // optional bool show_display = 2;
+
+    pub fn show_display(&self) -> bool {
+        self.show_display.unwrap_or(false)
+    }
+
+    pub fn clear_show_display(&mut self) {
+        self.show_display = ::std::option::Option::None;
+    }
+
+    pub fn has_show_display(&self) -> bool {
+        self.show_display.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_show_display(&mut self, v: bool) {
+        self.show_display = ::std::option::Option::Some(v);
+    }
+
+    // optional bool chunkify = 3;
+
+    pub fn chunkify(&self) -> bool {
+        self.chunkify.unwrap_or(false)
+    }
+
+    pub fn clear_chunkify(&mut self) {
+        self.chunkify = ::std::option::Option::None;
+    }
+
+    pub fn has_chunkify(&self) -> bool {
+        self.chunkify.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_chunkify(&mut self, v: bool) {
+        self.chunkify = ::std::option::Option::Some(v);
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(3);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
+            "address_n",
+            |m: &AlgorandGetFalconAddress| { &m.address_n },
+            |m: &mut AlgorandGetFalconAddress| { &mut m.address_n },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "show_display",
+            |m: &AlgorandGetFalconAddress| { &m.show_display },
+            |m: &mut AlgorandGetFalconAddress| { &mut m.show_display },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "chunkify",
+            |m: &AlgorandGetFalconAddress| { &m.chunkify },
+            |m: &mut AlgorandGetFalconAddress| { &mut m.chunkify },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<AlgorandGetFalconAddress>(
+            "AlgorandGetFalconAddress",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for AlgorandGetFalconAddress {
+    const NAME: &'static str = "AlgorandGetFalconAddress";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    is.read_repeated_packed_uint32_into(&mut self.address_n)?;
+                },
+                8 => {
+                    self.address_n.push(is.read_uint32()?);
+                },
+                16 => {
+                    self.show_display = ::std::option::Option::Some(is.read_bool()?);
+                },
+                24 => {
+                    self.chunkify = ::std::option::Option::Some(is.read_bool()?);
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        for value in &self.address_n {
+            my_size += ::protobuf::rt::uint32_size(1, *value);
+        };
+        if let Some(v) = self.show_display {
+            my_size += 1 + 1;
+        }
+        if let Some(v) = self.chunkify {
+            my_size += 1 + 1;
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        for v in &self.address_n {
+            os.write_uint32(1, *v)?;
+        };
+        if let Some(v) = self.show_display {
+            os.write_bool(2, v)?;
+        }
+        if let Some(v) = self.chunkify {
+            os.write_bool(3, v)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> AlgorandGetFalconAddress {
+        AlgorandGetFalconAddress::new()
+    }
+
+    fn clear(&mut self) {
+        self.address_n.clear();
+        self.show_display = ::std::option::Option::None;
+        self.chunkify = ::std::option::Option::None;
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static AlgorandGetFalconAddress {
+        static instance: AlgorandGetFalconAddress = AlgorandGetFalconAddress {
+            address_n: ::std::vec::Vec::new(),
+            show_display: ::std::option::Option::None,
+            chunkify: ::std::option::Option::None,
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for AlgorandGetFalconAddress {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("AlgorandGetFalconAddress").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for AlgorandGetFalconAddress {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for AlgorandGetFalconAddress {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:hw.trezor.messages.algorand.AlgorandFalconAddress)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct AlgorandFalconAddress {
+    // message fields
+    // @@protoc_insertion_point(field:hw.trezor.messages.algorand.AlgorandFalconAddress.address)
+    pub address: ::std::option::Option<::std::string::String>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.algorand.AlgorandFalconAddress.public_key)
+    pub public_key: ::std::option::Option<::std::vec::Vec<u8>>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.algorand.AlgorandFalconAddress.counter)
+    pub counter: ::std::option::Option<u32>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.algorand.AlgorandFalconAddress.teal_version)
+    pub teal_version: ::std::option::Option<u32>,
+    // special fields
+    // @@protoc_insertion_point(special_field:hw.trezor.messages.algorand.AlgorandFalconAddress.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a AlgorandFalconAddress {
+    fn default() -> &'a AlgorandFalconAddress {
+        <AlgorandFalconAddress as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl AlgorandFalconAddress {
+    pub fn new() -> AlgorandFalconAddress {
+        ::std::default::Default::default()
+    }
+
+    // required string address = 1;
+
+    pub fn address(&self) -> &str {
+        match self.address.as_ref() {
+            Some(v) => v,
+            None => "",
+        }
+    }
+
+    pub fn clear_address(&mut self) {
+        self.address = ::std::option::Option::None;
+    }
+
+    pub fn has_address(&self) -> bool {
+        self.address.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_address(&mut self, v: ::std::string::String) {
+        self.address = ::std::option::Option::Some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_address(&mut self) -> &mut ::std::string::String {
+        if self.address.is_none() {
+            self.address = ::std::option::Option::Some(::std::string::String::new());
+        }
+        self.address.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_address(&mut self) -> ::std::string::String {
+        self.address.take().unwrap_or_else(|| ::std::string::String::new())
+    }
+
+    // required bytes public_key = 2;
+
+    pub fn public_key(&self) -> &[u8] {
+        match self.public_key.as_ref() {
+            Some(v) => v,
+            None => &[],
+        }
+    }
+
+    pub fn clear_public_key(&mut self) {
+        self.public_key = ::std::option::Option::None;
+    }
+
+    pub fn has_public_key(&self) -> bool {
+        self.public_key.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_public_key(&mut self, v: ::std::vec::Vec<u8>) {
+        self.public_key = ::std::option::Option::Some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_public_key(&mut self) -> &mut ::std::vec::Vec<u8> {
+        if self.public_key.is_none() {
+            self.public_key = ::std::option::Option::Some(::std::vec::Vec::new());
+        }
+        self.public_key.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_public_key(&mut self) -> ::std::vec::Vec<u8> {
+        self.public_key.take().unwrap_or_else(|| ::std::vec::Vec::new())
+    }
+
+    // optional uint32 counter = 3;
+
+    pub fn counter(&self) -> u32 {
+        self.counter.unwrap_or(0)
+    }
+
+    pub fn clear_counter(&mut self) {
+        self.counter = ::std::option::Option::None;
+    }
+
+    pub fn has_counter(&self) -> bool {
+        self.counter.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_counter(&mut self, v: u32) {
+        self.counter = ::std::option::Option::Some(v);
+    }
+
+    // optional uint32 teal_version = 4;
+
+    pub fn teal_version(&self) -> u32 {
+        self.teal_version.unwrap_or(0)
+    }
+
+    pub fn clear_teal_version(&mut self) {
+        self.teal_version = ::std::option::Option::None;
+    }
+
+    pub fn has_teal_version(&self) -> bool {
+        self.teal_version.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_teal_version(&mut self, v: u32) {
+        self.teal_version = ::std::option::Option::Some(v);
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(4);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "address",
+            |m: &AlgorandFalconAddress| { &m.address },
+            |m: &mut AlgorandFalconAddress| { &mut m.address },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "public_key",
+            |m: &AlgorandFalconAddress| { &m.public_key },
+            |m: &mut AlgorandFalconAddress| { &mut m.public_key },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "counter",
+            |m: &AlgorandFalconAddress| { &m.counter },
+            |m: &mut AlgorandFalconAddress| { &mut m.counter },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "teal_version",
+            |m: &AlgorandFalconAddress| { &m.teal_version },
+            |m: &mut AlgorandFalconAddress| { &mut m.teal_version },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<AlgorandFalconAddress>(
+            "AlgorandFalconAddress",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for AlgorandFalconAddress {
+    const NAME: &'static str = "AlgorandFalconAddress";
+
+    fn is_initialized(&self) -> bool {
+        if self.address.is_none() {
+            return false;
+        }
+        if self.public_key.is_none() {
+            return false;
+        }
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.address = ::std::option::Option::Some(is.read_string()?);
+                },
+                18 => {
+                    self.public_key = ::std::option::Option::Some(is.read_bytes()?);
+                },
+                24 => {
+                    self.counter = ::std::option::Option::Some(is.read_uint32()?);
+                },
+                32 => {
+                    self.teal_version = ::std::option::Option::Some(is.read_uint32()?);
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if let Some(v) = self.address.as_ref() {
+            my_size += ::protobuf::rt::string_size(1, &v);
+        }
+        if let Some(v) = self.public_key.as_ref() {
+            my_size += ::protobuf::rt::bytes_size(2, &v);
+        }
+        if let Some(v) = self.counter {
+            my_size += ::protobuf::rt::uint32_size(3, v);
+        }
+        if let Some(v) = self.teal_version {
+            my_size += ::protobuf::rt::uint32_size(4, v);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if let Some(v) = self.address.as_ref() {
+            os.write_string(1, v)?;
+        }
+        if let Some(v) = self.public_key.as_ref() {
+            os.write_bytes(2, v)?;
+        }
+        if let Some(v) = self.counter {
+            os.write_uint32(3, v)?;
+        }
+        if let Some(v) = self.teal_version {
+            os.write_uint32(4, v)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> AlgorandFalconAddress {
+        AlgorandFalconAddress::new()
+    }
+
+    fn clear(&mut self) {
+        self.address = ::std::option::Option::None;
+        self.public_key = ::std::option::Option::None;
+        self.counter = ::std::option::Option::None;
+        self.teal_version = ::std::option::Option::None;
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static AlgorandFalconAddress {
+        static instance: AlgorandFalconAddress = AlgorandFalconAddress {
+            address: ::std::option::Option::None,
+            public_key: ::std::option::Option::None,
+            counter: ::std::option::Option::None,
+            teal_version: ::std::option::Option::None,
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for AlgorandFalconAddress {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("AlgorandFalconAddress").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for AlgorandFalconAddress {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for AlgorandFalconAddress {
     type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
 }
 
@@ -1961,21 +2526,29 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     ess_n\x18\x01\x20\x03(\rR\x08addressN\x12!\n\x0cshow_display\x18\x02\x20\
     \x01(\x08R\x0bshowDisplay\x12\x1a\n\x08chunkify\x18\x03\x20\x01(\x08R\
     \x08chunkify\"+\n\x0fAlgorandAddress\x12\x18\n\x07address\x18\x01\x20\
-    \x02(\tR\x07address\"\x98\x01\n\x0eAlgorandSignTx\x12\x1b\n\taddress_n\
+    \x02(\tR\x07address\"\xc2\x01\n\x0eAlgorandSignTx\x12\x1b\n\taddress_n\
     \x18\x01\x20\x03(\rR\x08addressN\x12#\n\rserialized_tx\x18\x02\x20\x02(\
     \x0cR\x0cserializedTx\x12\x20\n\ngroup_size\x18\x03\x20\x01(\r:\x011R\tg\
-    roupSize\x12\"\n\x0bgroup_index\x18\x04\x20\x01(\r:\x010R\ngroupIndex\"4\
-    \n\x11AlgorandTxRequest\x12\x1f\n\x0bgroup_index\x18\x01\x20\x01(\rR\ngr\
-    oupIndex\"4\n\rAlgorandTxAck\x12#\n\rserialized_tx\x18\x01\x20\x02(\x0cR\
-    \x0cserializedTx\"^\n\x13AlgorandTxSignature\x12\x1c\n\tsignature\x18\
-    \x01\x20\x02(\x0cR\tsignature\x12)\n\x10group_signatures\x18\x02\x20\x03\
-    (\x0cR\x0fgroupSignatures\"\x97\x01\n\x10AlgorandSignData\x12\x1b\n\tadd\
-    ress_n\x18\x01\x20\x03(\rR\x08addressN\x12\x12\n\x04data\x18\x02\x20\x02\
-    (\x0cR\x04data\x12\x16\n\x06domain\x18\x03\x20\x02(\tR\x06domain\x12\x1b\
-    \n\tauth_data\x18\x04\x20\x01(\x0cR\x08authData\x12\x1d\n\nrequest_id\
-    \x18\x05\x20\x01(\tR\trequestId\"5\n\x15AlgorandDataSignature\x12\x1c\n\
-    \tsignature\x18\x01\x20\x02(\x0cR\tsignatureB<\n#com.satoshilabs.trezor.\
-    lib.protobufB\x15TrezorMessageAlgorand\
+    roupSize\x12\"\n\x0bgroup_index\x18\x04\x20\x01(\r:\x010R\ngroupIndex\
+    \x12(\n\x0esignature_type\x18\x05\x20\x01(\r:\x010R\rsignatureType\"4\n\
+    \x11AlgorandTxRequest\x12\x1f\n\x0bgroup_index\x18\x01\x20\x01(\rR\ngrou\
+    pIndex\"4\n\rAlgorandTxAck\x12#\n\rserialized_tx\x18\x01\x20\x02(\x0cR\
+    \x0cserializedTx\"\x85\x01\n\x13AlgorandTxSignature\x12\x1c\n\tsignature\
+    \x18\x01\x20\x02(\x0cR\tsignature\x12)\n\x10group_signatures\x18\x02\x20\
+    \x03(\x0cR\x0fgroupSignatures\x12%\n\x0esignature_type\x18\x03\x20\x01(\
+    \rR\rsignatureType\"v\n\x18AlgorandGetFalconAddress\x12\x1b\n\taddress_n\
+    \x18\x01\x20\x03(\rR\x08addressN\x12!\n\x0cshow_display\x18\x02\x20\x01(\
+    \x08R\x0bshowDisplay\x12\x1a\n\x08chunkify\x18\x03\x20\x01(\x08R\x08chun\
+    kify\"\x8d\x01\n\x15AlgorandFalconAddress\x12\x18\n\x07address\x18\x01\
+    \x20\x02(\tR\x07address\x12\x1d\n\npublic_key\x18\x02\x20\x02(\x0cR\tpub\
+    licKey\x12\x18\n\x07counter\x18\x03\x20\x01(\rR\x07counter\x12!\n\x0ctea\
+    l_version\x18\x04\x20\x01(\rR\x0btealVersion\"\x97\x01\n\x10AlgorandSign\
+    Data\x12\x1b\n\taddress_n\x18\x01\x20\x03(\rR\x08addressN\x12\x12\n\x04d\
+    ata\x18\x02\x20\x02(\x0cR\x04data\x12\x16\n\x06domain\x18\x03\x20\x02(\t\
+    R\x06domain\x12\x1b\n\tauth_data\x18\x04\x20\x01(\x0cR\x08authData\x12\
+    \x1d\n\nrequest_id\x18\x05\x20\x01(\tR\trequestId\"5\n\x15AlgorandDataSi\
+    gnature\x12\x1c\n\tsignature\x18\x01\x20\x02(\x0cR\tsignatureB<\n#com.sa\
+    toshilabs.trezor.lib.protobufB\x15TrezorMessageAlgorand\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -1994,7 +2567,7 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
         let generated_file_descriptor = generated_file_descriptor_lazy.get(|| {
             let mut deps = ::std::vec::Vec::with_capacity(1);
             deps.push(super::messages_common::file_descriptor().clone());
-            let mut messages = ::std::vec::Vec::with_capacity(10);
+            let mut messages = ::std::vec::Vec::with_capacity(12);
             messages.push(AlgorandGetPublicKey::generated_message_descriptor_data());
             messages.push(AlgorandPublicKey::generated_message_descriptor_data());
             messages.push(AlgorandGetAddress::generated_message_descriptor_data());
@@ -2003,6 +2576,8 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
             messages.push(AlgorandTxRequest::generated_message_descriptor_data());
             messages.push(AlgorandTxAck::generated_message_descriptor_data());
             messages.push(AlgorandTxSignature::generated_message_descriptor_data());
+            messages.push(AlgorandGetFalconAddress::generated_message_descriptor_data());
+            messages.push(AlgorandFalconAddress::generated_message_descriptor_data());
             messages.push(AlgorandSignData::generated_message_descriptor_data());
             messages.push(AlgorandDataSignature::generated_message_descriptor_data());
             let mut enums = ::std::vec::Vec::with_capacity(0);

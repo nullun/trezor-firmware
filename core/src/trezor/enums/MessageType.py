@@ -272,6 +272,8 @@ if not utils.BITCOIN_ONLY:
     AlgorandTxSignature = 613
     AlgorandSignData = 614
     AlgorandDataSignature = 615
+    AlgorandGetFalconAddress = 616
+    AlgorandFalconAddress = 617
     WebAuthnListResidentCredentials = 800
     WebAuthnCredentials = 801
     WebAuthnAddResidentCredential = 802

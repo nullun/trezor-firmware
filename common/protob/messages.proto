@@ -328,6 +328,8 @@ enum MessageType {
     MessageType_AlgorandTxSignature = 613 [(wire_out) = true];
     MessageType_AlgorandSignData = 614 [(wire_in) = true];
     MessageType_AlgorandDataSignature = 615 [(wire_out) = true];
+    MessageType_AlgorandGetFalconAddress = 616 [(wire_in) = true];
+    MessageType_AlgorandFalconAddress = 617 [(wire_out) = true];
 
     // BNB Beacon Chain (deprecated)
     reserved 700 to 709;
