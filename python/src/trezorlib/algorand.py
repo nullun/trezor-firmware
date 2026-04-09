@@ -14,13 +14,32 @@
 # You should have received a copy of the License along with this library.
 # If not, see <https://www.gnu.org/licenses/lgpl-3.0.html>.
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, NamedTuple, Optional
 
 from . import messages
 from .tools import workflow
 
 if TYPE_CHECKING:
     from .client import Session
+
+SIG_ED25519 = 0
+SIG_FALCON_DET1024 = 1
+
+
+class FalconAccountInfo(NamedTuple):
+    """All metadata needed to use a FALCON-controlled Algorand account.
+
+    `address` is the 58-character LogicSig contract account that the user
+    funds and transacts from. `public_key` is the raw 1793-byte FALCON
+    public key, which the host needs to reconstruct the LogicSig program
+    bytecode for transaction submission. `counter` and `teal_version`
+    pin down which template was used.
+    """
+
+    address: str
+    public_key: bytes
+    counter: int
+    teal_version: int
 
 
 @workflow(capability=messages.Capability.Algorand)
@@ -60,9 +79,17 @@ def sign_tx(
     session: "Session",
     address_n: List[int],
     serialized_tx: bytes,
+    signature_type: int = SIG_ED25519,
 ) -> bytes:
-    """Sign a single Algorand transaction."""
-    return sign_tx_group(session, address_n, [serialized_tx])[0]
+    """Sign a single Algorand transaction.
+
+    Pass `signature_type=SIG_FALCON_DET1024` to use the post-quantum
+    FALCON path; the device will return a variable-length compressed
+    Falcon signature instead of the 64-byte Ed25519 signature.
+    """
+    return sign_tx_group(
+        session, address_n, [serialized_tx], signature_type=signature_type
+    )[0]
 
 
 @workflow(capability=messages.Capability.Algorand)
@@ -70,12 +97,14 @@ def sign_tx_group(
     session: "Session",
     address_n: List[int],
     serialized_txs: List[bytes],
+    signature_type: int = SIG_ED25519,
 ) -> List[bytes]:
     """Sign an Algorand transaction group (1-16 transactions).
 
-    Returns a list of signatures, one per transaction.
-    Signatures are 64 bytes for transactions where the signer is the sender,
-    or empty bytes for transactions belonging to other accounts.
+    Returns a list of signatures, one per transaction. Signatures are
+    64 bytes for Ed25519 or up to ~1.4 KB for FALCON-DET1024 when the
+    signer is the sender, or empty bytes for transactions belonging to
+    other accounts.
     """
     group_size = len(serialized_txs)
     if group_size < 1 or group_size > 16:
@@ -88,6 +117,7 @@ def sign_tx_group(
             serialized_tx=serialized_txs[0],
             group_size=group_size,
             group_index=0,
+            signature_type=signature_type,
         ),
     )
 
@@ -106,6 +136,37 @@ def sign_tx_group(
         return [resp.signature]
     else:
         return list(resp.group_signatures)
+
+
+@workflow(capability=messages.Capability.Algorand)
+def get_falcon_address(
+    session: "Session",
+    address_n: List[int],
+    show_display: bool = False,
+    chunkify: bool = False,
+) -> FalconAccountInfo:
+    """Get the FALCON-controlled Algorand LogicSig address.
+
+    The device derives the FALCON keypair from the HD seed, embeds the
+    public key into the TEAL LogicSig template and iterates a counter
+    until the resulting address is off the Ed25519 curve. Returns the
+    full set of metadata the host needs to reconstruct the LogicSig
+    program for transaction submission.
+    """
+    resp = session.call(
+        messages.AlgorandGetFalconAddress(
+            address_n=address_n,
+            show_display=show_display,
+            chunkify=chunkify,
+        ),
+        expect=messages.AlgorandFalconAddress,
+    )
+    return FalconAccountInfo(
+        address=resp.address,
+        public_key=resp.public_key,
+        counter=resp.counter if resp.counter is not None else 0,
+        teal_version=resp.teal_version if resp.teal_version is not None else 12,
+    )
 
 
 @workflow(capability=messages.Capability.Algorand)

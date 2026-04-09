@@ -77,12 +77,18 @@ def get_address(
     help="Read transactions from file (one hex-encoded tx per line). "
     "Use '-' for stdin. Cannot be combined with positional arguments.",
 )
+@click.option(
+    "--falcon",
+    is_flag=True,
+    help="Sign with FALCON-DET1024 instead of Ed25519 (post-quantum).",
+)
 @with_session
 def sign_tx(
     session: "Session",
     address: str,
     serialized_txs: tuple[str, ...],
     tx_file: "click.utils.LazyFile | None",
+    falcon: bool,
 ) -> str:
     """Sign an Algorand transaction or atomic transaction group.
 
@@ -118,11 +124,54 @@ def sign_tx(
     address_n = tools.parse_path(address)
     raw_txs = [bytes.fromhex(tx) for tx in hex_txs]
 
-    signatures = algorand.sign_tx_group(session, address_n, raw_txs)
+    sig_type = algorand.SIG_FALCON_DET1024 if falcon else algorand.SIG_ED25519
+    signatures = algorand.sign_tx_group(
+        session, address_n, raw_txs, signature_type=sig_type
+    )
 
     if len(signatures) == 1:
         return signatures[0].hex()
     return "\n".join(sig.hex() for sig in signatures)
+
+
+@cli.command(name="get-falcon-address")
+@click.option("-n", "--address", default=DEFAULT_PATH, help=PATH_HELP)
+@click.option("-d", "--show-display", is_flag=True)
+@click.option("-C", "--chunkify", is_flag=True)
+@click.option(
+    "--pubkey",
+    is_flag=True,
+    help="Also print the raw FALCON public key (base64).",
+)
+@click.option(
+    "--verbose",
+    is_flag=True,
+    help="Print all metadata (counter, TEAL version).",
+)
+@with_session
+def get_falcon_address(
+    session: "Session",
+    address: str,
+    show_display: bool,
+    chunkify: bool,
+    pubkey: bool,
+    verbose: bool,
+) -> str:
+    """Get the FALCON-DET1024 (post-quantum) Algorand address."""
+    import base64 as _b64
+
+    address_n = tools.parse_path(address)
+    info = algorand.get_falcon_address(
+        session, address_n, show_display=show_display, chunkify=chunkify
+    )
+
+    lines = [info.address]
+    if pubkey:
+        lines.append("Public key: " + _b64.b64encode(info.public_key).decode())
+    if verbose:
+        lines.append(f"Counter: {info.counter}")
+        lines.append(f"TEAL version: {info.teal_version}")
+    return "\n".join(lines)
 
 
 @cli.command()
