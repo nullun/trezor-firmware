@@ -44,9 +44,12 @@ async def confirm_transaction(
     tx: Transaction,
     group_index: int | None = None,
     group_size: int | None = None,
+    signature_type: int = 0,
 ) -> None:
     """Show transaction details for user confirmation."""
     from trezor.crypto import base64
+
+    from . import SIG_FALCON_DET1024
 
     items: list[PropertyType] = []
 
@@ -54,6 +57,11 @@ async def confirm_transaction(
     type_name = TX_TYPE_NAMES.get(tx.tx_type, "Unknown")
     if group_index is not None and group_size is not None:
         type_name = f"{type_name} ({group_index + 1}/{group_size})"
+
+    # Highlight when the user is about to authorise a post-quantum
+    # FALCON signature instead of the default Ed25519 path.
+    if signature_type == SIG_FALCON_DET1024:
+        items.append((TR.algorand__signature_type, TR.algorand__falcon_pq, None))
 
     # Common fields
     items.append((TR.algorand__sender, format_address(tx.sender), None))

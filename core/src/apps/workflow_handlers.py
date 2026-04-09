@@ -148,6 +148,8 @@ def _find_message_handler_module(msg_type: int) -> str:
             return "apps.algorand.sign_tx"
         if msg_type == MessageType.AlgorandSignData:
             return "apps.algorand.sign_data"
+        if msg_type == MessageType.AlgorandGetFalconAddress:
+            return "apps.algorand.get_falcon_address"
 
         if msg_type == MessageType.SetU2FCounter:
             return "apps.management.set_u2f_counter"
