@@ -14,6 +14,11 @@ try:
 except Exception:
     pass
 
+try:
+    from trezorcrypto import falcon  # noqa: F401
+except Exception:
+    pass
+
 from trezor import utils
 
 if not utils.BITCOIN_ONLY:

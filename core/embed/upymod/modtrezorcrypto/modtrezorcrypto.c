@@ -78,6 +78,9 @@ static void wrapped_ui_wait_callback(uint32_t current, uint32_t total) {
 #include "modtrezorcrypto-monero.h"
 #include "modtrezorcrypto-nem.h"
 #endif
+#if USE_FALCON
+#include "modtrezorcrypto-falcon.h"
+#endif
 
 STATIC const mp_rom_map_elem_t mp_module_trezorcrypto_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_trezorcrypto)},
@@ -103,6 +106,10 @@ STATIC const mp_rom_map_elem_t mp_module_trezorcrypto_globals_table[] = {
      MP_ROM_PTR(&mod_trezorcrypto_curve25519_module)},
     {MP_ROM_QSTR(MP_QSTR_ed25519),
      MP_ROM_PTR(&mod_trezorcrypto_ed25519_module)},
+#if USE_FALCON
+    {MP_ROM_QSTR(MP_QSTR_falcon),
+     MP_ROM_PTR(&mod_trezorcrypto_falcon_module)},
+#endif
 #if USE_THP
     {MP_ROM_QSTR(MP_QSTR_elligator2),
      MP_ROM_PTR(&mod_trezorcrypto_elligator2_module)},
