@@ -21,6 +21,7 @@
 
 #include "py/objstr.h"
 
+#include "ed25519-donna/ed25519-donna.h"
 #include "ed25519-donna/ed25519-keccak.h"
 #include "ed25519-donna/ed25519.h"
 
@@ -312,6 +313,27 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(
     mod_trezorcrypto_ed25519_cosi_sign_obj, 5, 5,
     mod_trezorcrypto_ed25519_cosi_sign);
 
+/// def point_is_on_curve(point: AnyBytes) -> bool:
+///     """
+///     Returns True if the 32-byte input decodes to a valid point on the
+///     Ed25519 curve. Used by the Algorand FALCON LogicSig derivation to
+///     check that a candidate account address is *not* a valid Ed25519
+///     point (so no classical key can spend from it).
+///     """
+STATIC mp_obj_t mod_trezorcrypto_ed25519_point_is_on_curve(mp_obj_t point) {
+  mp_buffer_info_t p = {0};
+  mp_get_buffer_raise(point, &p, MP_BUFFER_READ);
+  if (p.len != 32) {
+    return mp_const_false;
+  }
+  ge25519 P = {0};
+  return ge25519_unpack_negative_vartime(&P, (const unsigned char *)p.buf)
+             ? mp_const_true
+             : mp_const_false;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_ed25519_point_is_on_curve_obj,
+                                 mod_trezorcrypto_ed25519_point_is_on_curve);
+
 STATIC const mp_rom_map_elem_t mod_trezorcrypto_ed25519_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ed25519)},
     {MP_ROM_QSTR(MP_QSTR_generate_secret),
@@ -333,6 +355,8 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_ed25519_globals_table[] = {
      MP_ROM_PTR(&mod_trezorcrypto_ed25519_cosi_commit_obj)},
     {MP_ROM_QSTR(MP_QSTR_cosi_sign),
      MP_ROM_PTR(&mod_trezorcrypto_ed25519_cosi_sign_obj)},
+    {MP_ROM_QSTR(MP_QSTR_point_is_on_curve),
+     MP_ROM_PTR(&mod_trezorcrypto_ed25519_point_is_on_curve_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_ed25519_globals,
                             mod_trezorcrypto_ed25519_globals_table);

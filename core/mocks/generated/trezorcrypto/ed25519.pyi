@@ -78,3 +78,13 @@ def cosi_sign(
     """
     Produce signature of message using COSI cosigning scheme.
     """
+
+
+# upymod/modtrezorcrypto/modtrezorcrypto-ed25519.h
+def point_is_on_curve(point: AnyBytes) -> bool:
+    """
+    Returns True if the 32-byte input decodes to a valid point on the
+    Ed25519 curve. Used by the Algorand FALCON LogicSig derivation to
+    check that a candidate account address is *not* a valid Ed25519
+    point (so no classical key can spend from it).
+    """
