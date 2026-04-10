@@ -31,11 +31,20 @@ TX_TYPE_STRINGS = {
 
 TX_TYPE_NAMES = {
     TxType.PAYMENT: "Payment",
-    TxType.KEYREG: "Key registration",
-    TxType.ASSET_XFER: "Asset transfer",
-    TxType.ASSET_FREEZE: "Asset freeze",
-    TxType.ASSET_CONFIG: "Asset config",
-    TxType.APPLICATION: "Application call",
+    TxType.KEYREG: "Key Registration",
+    TxType.ASSET_XFER: "Asset Transfer",
+    TxType.ASSET_FREEZE: "Asset Freeze",
+    TxType.ASSET_CONFIG: "Asset Config",
+    TxType.APPLICATION: "Application Call",
+}
+
+TX_TYPE_ABBREVS = {
+    TxType.PAYMENT: "pay",
+    TxType.KEYREG: "keyreg",
+    TxType.ASSET_XFER: "axfer",
+    TxType.ASSET_FREEZE: "afrz",
+    TxType.ASSET_CONFIG: "acfg",
+    TxType.APPLICATION: "appl",
 }
 
 ON_COMPLETION_NAMES = {

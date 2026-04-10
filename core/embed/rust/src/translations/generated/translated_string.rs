@@ -1753,6 +1753,42 @@ pub enum TranslatedString {
     algorand__vote_pk = 1285,  // "Vote PK"
     #[cfg(feature = "universal_fw")]
     algorand__vrf_pk = 1286,  // "VRF PK"
+    #[cfg(feature = "universal_fw")]
+    algorand__application = 1287,  // "Application"
+    #[cfg(feature = "universal_fw")]
+    algorand__applications = 1288,  // "Applications"
+    #[cfg(feature = "universal_fw")]
+    algorand__args = 1289,  // "Args"
+    #[cfg(feature = "universal_fw")]
+    algorand__asset = 1290,  // "Asset"
+    #[cfg(feature = "universal_fw")]
+    algorand__asset_receiver = 1291,  // "Asset Receiver"
+    #[cfg(feature = "universal_fw")]
+    algorand__asset_sender = 1292,  // "Asset Sender"
+    #[cfg(feature = "universal_fw")]
+    algorand__assets = 1293,  // "Assets"
+    #[cfg(feature = "universal_fw")]
+    algorand__close_to_warning = 1294,  // "This transaction will close the account and send remaining funds to the Close To address!"
+    #[cfg(feature = "universal_fw")]
+    algorand__destroy_warning = 1295,  // "This transaction will destroy the asset. This cannot be undone!"
+    #[cfg(feature = "universal_fw")]
+    algorand__freeze = 1296,  // "Freeze"
+    #[cfg(feature = "universal_fw")]
+    algorand__holdings = 1297,  // "Holdings"
+    #[cfg(feature = "universal_fw")]
+    algorand__locals = 1298,  // "Locals"
+    #[cfg(feature = "universal_fw")]
+    algorand__network = 1299,  // "Network"
+    #[cfg(feature = "universal_fw")]
+    algorand__rekey_to = 1300,  // "Rekey To"
+    #[cfg(feature = "universal_fw")]
+    algorand__status = 1301,  // "Status"
+    #[cfg(feature = "universal_fw")]
+    algorand__total_supply = 1302,  // "Total Supply"
+    #[cfg(feature = "universal_fw")]
+    algorand__unfreeze = 1303,  // "Unfreeze"
+    #[cfg(feature = "universal_fw")]
+    algorand__valid_till = 1304,  // "Valid Till"
 }
 
 impl TranslatedString {
@@ -3047,6 +3083,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -4339,6 +4393,24 @@ impl TranslatedString {
                 21122,
                 21129,
                 21135,
+                21146,
+                21158,
+                21162,
+                21167,
+                21181,
+                21193,
+                21199,
+                21288,
+                21351,
+                21357,
+                21365,
+                21371,
+                21378,
+                21386,
+                21392,
+                21404,
+                21412,
+                21422,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -5630,6 +5702,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -6922,6 +7012,24 @@ impl TranslatedString {
                 21122,
                 21129,
                 21135,
+                21146,
+                21158,
+                21162,
+                21167,
+                21181,
+                21193,
+                21199,
+                21288,
+                21351,
+                21357,
+                21365,
+                21371,
+                21378,
+                21386,
+                21392,
+                21404,
+                21412,
+                21422,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -8213,6 +8321,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -9505,6 +9631,24 @@ impl TranslatedString {
                 21122,
                 21129,
                 21135,
+                21146,
+                21158,
+                21162,
+                21167,
+                21181,
+                21193,
+                21199,
+                21288,
+                21351,
+                21357,
+                21365,
+                21371,
+                21378,
+                21386,
+                21392,
+                21404,
+                21412,
+                21422,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -10796,6 +10940,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -12088,6 +12250,24 @@ impl TranslatedString {
                 21122,
                 21129,
                 21135,
+                21146,
+                21158,
+                21162,
+                21167,
+                21181,
+                21193,
+                21199,
+                21288,
+                21351,
+                21357,
+                21365,
+                21371,
+                21378,
+                21386,
+                21392,
+                21404,
+                21412,
+                21422,
             ];
 
         } else if #[cfg(feature = "layout_caesar")] {
@@ -13380,6 +13560,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -14672,6 +14870,24 @@ impl TranslatedString {
                 19147,
                 19154,
                 19160,
+                19171,
+                19183,
+                19187,
+                19192,
+                19206,
+                19218,
+                19224,
+                19313,
+                19376,
+                19382,
+                19390,
+                19396,
+                19403,
+                19411,
+                19417,
+                19429,
+                19437,
+                19447,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -15963,6 +16179,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -17255,6 +17489,24 @@ impl TranslatedString {
                 19147,
                 19154,
                 19160,
+                19171,
+                19183,
+                19187,
+                19192,
+                19206,
+                19218,
+                19224,
+                19313,
+                19376,
+                19382,
+                19390,
+                19396,
+                19403,
+                19411,
+                19417,
+                19429,
+                19437,
+                19447,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -18546,6 +18798,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -19838,6 +20108,24 @@ impl TranslatedString {
                 19147,
                 19154,
                 19160,
+                19171,
+                19183,
+                19187,
+                19192,
+                19206,
+                19218,
+                19224,
+                19313,
+                19376,
+                19382,
+                19390,
+                19396,
+                19403,
+                19411,
+                19417,
+                19429,
+                19437,
+                19447,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -21129,6 +21417,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -22421,6 +22727,24 @@ impl TranslatedString {
                 19147,
                 19154,
                 19160,
+                19171,
+                19183,
+                19187,
+                19192,
+                19206,
+                19218,
+                19224,
+                19313,
+                19376,
+                19382,
+                19390,
+                19396,
+                19403,
+                19411,
+                19417,
+                19429,
+                19437,
+                19447,
             ];
 
         } else if #[cfg(feature = "layout_delizia")] {
@@ -23713,6 +24037,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -25005,6 +25347,24 @@ impl TranslatedString {
                 20426,
                 20433,
                 20439,
+                20450,
+                20462,
+                20466,
+                20471,
+                20485,
+                20497,
+                20503,
+                20592,
+                20655,
+                20661,
+                20669,
+                20675,
+                20682,
+                20690,
+                20696,
+                20708,
+                20716,
+                20726,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -26296,6 +26656,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -27588,6 +27966,24 @@ impl TranslatedString {
                 20426,
                 20433,
                 20439,
+                20450,
+                20462,
+                20466,
+                20471,
+                20485,
+                20497,
+                20503,
+                20592,
+                20655,
+                20661,
+                20669,
+                20675,
+                20682,
+                20690,
+                20696,
+                20708,
+                20716,
+                20726,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -28879,6 +29275,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -30171,6 +30585,24 @@ impl TranslatedString {
                 20426,
                 20433,
                 20439,
+                20450,
+                20462,
+                20466,
+                20471,
+                20485,
+                20497,
+                20503,
+                20592,
+                20655,
+                20661,
+                20669,
+                20675,
+                20682,
+                20690,
+                20696,
+                20708,
+                20716,
+                20726,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -31462,6 +31894,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -32754,6 +33204,24 @@ impl TranslatedString {
                 20426,
                 20433,
                 20439,
+                20450,
+                20462,
+                20466,
+                20471,
+                20485,
+                20497,
+                20503,
+                20592,
+                20655,
+                20661,
+                20669,
+                20675,
+                20682,
+                20690,
+                20696,
+                20708,
+                20716,
+                20726,
             ];
 
         } else if #[cfg(feature = "layout_eckhart")] {
@@ -34046,6 +34514,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -35338,6 +35824,24 @@ impl TranslatedString {
                 21450,
                 21457,
                 21463,
+                21474,
+                21486,
+                21490,
+                21495,
+                21509,
+                21521,
+                21527,
+                21616,
+                21679,
+                21685,
+                21693,
+                21699,
+                21706,
+                21714,
+                21720,
+                21732,
+                21740,
+                21750,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -36629,6 +37133,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -37921,6 +38443,24 @@ impl TranslatedString {
                 21450,
                 21457,
                 21463,
+                21474,
+                21486,
+                21490,
+                21495,
+                21509,
+                21521,
+                21527,
+                21616,
+                21679,
+                21685,
+                21693,
+                21699,
+                21706,
+                21714,
+                21720,
+                21732,
+                21740,
+                21750,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -39212,6 +39752,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -40504,6 +41062,24 @@ impl TranslatedString {
                 21450,
                 21457,
                 21463,
+                21474,
+                21486,
+                21490,
+                21495,
+                21509,
+                21521,
+                21527,
+                21616,
+                21679,
+                21685,
+                21693,
+                21699,
+                21706,
+                21714,
+                21720,
+                21732,
+                21740,
+                21750,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -41795,6 +42371,24 @@ impl TranslatedString {
                 "Vote last",
                 "Vote PK",
                 "VRF PK",
+                "Application",
+                "Applications",
+                "Args",
+                "Asset",
+                "Asset Receiver",
+                "Asset Sender",
+                "Assets",
+                "This transaction will close the account and send remaining funds to the Close To address!",
+                "This transaction will destroy the asset. This cannot be undone!",
+                "Freeze",
+                "Holdings",
+                "Locals",
+                "Network",
+                "Rekey To",
+                "Status",
+                "Total Supply",
+                "Unfreeze",
+                "Valid Till",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -43087,6 +43681,24 @@ impl TranslatedString {
                 21450,
                 21457,
                 21463,
+                21474,
+                21486,
+                21490,
+                21495,
+                21509,
+                21521,
+                21527,
+                21616,
+                21679,
+                21685,
+                21693,
+                21699,
+                21706,
+                21714,
+                21720,
+                21732,
+                21740,
+                21750,
             ];
 
         }
@@ -43131,9 +43743,17 @@ impl TranslatedString {
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__app_id, Self::algorand__app_id),
         #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__application, Self::algorand__application),
+        #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__application_call, Self::algorand__application_call),
         #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__applications, Self::algorand__applications),
+        #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__approval_program, Self::algorand__approval_program),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__args, Self::algorand__args),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__asset, Self::algorand__asset),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__asset_config, Self::algorand__asset_config),
         #[cfg(feature = "universal_fw")]
@@ -43143,7 +43763,13 @@ impl TranslatedString {
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__asset_name, Self::algorand__asset_name),
         #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__asset_receiver, Self::algorand__asset_receiver),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__asset_sender, Self::algorand__asset_sender),
+        #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__asset_transfer, Self::algorand__asset_transfer),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__assets, Self::algorand__assets),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__auth_data, Self::algorand__auth_data),
         #[cfg(feature = "universal_fw")]
@@ -43159,6 +43785,8 @@ impl TranslatedString {
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__close_to, Self::algorand__close_to),
         #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__close_to_warning, Self::algorand__close_to_warning),
+        #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__confirm_transaction, Self::algorand__confirm_transaction),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__create_app, Self::algorand__create_app),
@@ -43170,6 +43798,8 @@ impl TranslatedString {
         (Qstr::MP_QSTR_algorand__default_frozen, Self::algorand__default_frozen),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__destination, Self::algorand__destination),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__destroy_warning, Self::algorand__destroy_warning),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__domain, Self::algorand__domain),
         #[cfg(feature = "universal_fw")]
@@ -43184,6 +43814,8 @@ impl TranslatedString {
         (Qstr::MP_QSTR_algorand__foreign_apps, Self::algorand__foreign_apps),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__foreign_assets, Self::algorand__foreign_assets),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__freeze, Self::algorand__freeze),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__freezer, Self::algorand__freezer),
         #[cfg(feature = "universal_fw")]
@@ -43203,6 +43835,8 @@ impl TranslatedString {
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__group_transaction, Self::algorand__group_transaction),
         #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__holdings, Self::algorand__holdings),
+        #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__key_dilution, Self::algorand__key_dilution),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__key_registration, Self::algorand__key_registration),
@@ -43213,9 +43847,13 @@ impl TranslatedString {
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__local_schema, Self::algorand__local_schema),
         #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__locals, Self::algorand__locals),
+        #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__manager, Self::algorand__manager),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__metadata_hash, Self::algorand__metadata_hash),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__network, Self::algorand__network),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__non_participation, Self::algorand__non_participation),
         #[cfg(feature = "universal_fw")]
@@ -43230,6 +43868,8 @@ impl TranslatedString {
         (Qstr::MP_QSTR_algorand__receiver, Self::algorand__receiver),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__reject_version, Self::algorand__reject_version),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__rekey_to, Self::algorand__rekey_to),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__rekey_warning, Self::algorand__rekey_warning),
         #[cfg(feature = "universal_fw")]
@@ -43249,11 +43889,17 @@ impl TranslatedString {
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__state_proof_pk, Self::algorand__state_proof_pk),
         #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__status, Self::algorand__status),
+        #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__title, Self::algorand__title),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__total_supply, Self::algorand__total_supply),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__total_units, Self::algorand__total_units),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__tx_index_template, Self::algorand__tx_index_template),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__unfreeze, Self::algorand__unfreeze),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__unfrozen, Self::algorand__unfrozen),
         #[cfg(feature = "universal_fw")]
@@ -43262,6 +43908,8 @@ impl TranslatedString {
         (Qstr::MP_QSTR_algorand__unset, Self::algorand__unset),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__url, Self::algorand__url),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__valid_till, Self::algorand__valid_till),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__vote_first, Self::algorand__vote_first),
         #[cfg(feature = "universal_fw")]
