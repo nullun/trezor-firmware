@@ -1788,7 +1788,7 @@ pub enum TranslatedString {
     #[cfg(feature = "universal_fw")]
     algorand__unfreeze = 1303,  // "Unfreeze"
     #[cfg(feature = "universal_fw")]
-    algorand__valid_till = 1304,  // "Valid Till"
+    algorand__validity_window = 1305,  // "Validity window"
 }
 
 impl TranslatedString {
@@ -3100,7 +3100,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -4410,7 +4411,8 @@ impl TranslatedString {
                 21392,
                 21404,
                 21412,
-                21422,
+                21412,
+                21427,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -5719,7 +5721,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -7029,7 +7032,8 @@ impl TranslatedString {
                 21392,
                 21404,
                 21412,
-                21422,
+                21412,
+                21427,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -8338,7 +8342,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -9648,7 +9653,8 @@ impl TranslatedString {
                 21392,
                 21404,
                 21412,
-                21422,
+                21412,
+                21427,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -10957,7 +10963,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -12267,7 +12274,8 @@ impl TranslatedString {
                 21392,
                 21404,
                 21412,
-                21422,
+                21412,
+                21427,
             ];
 
         } else if #[cfg(feature = "layout_caesar")] {
@@ -13577,7 +13585,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -14887,7 +14896,8 @@ impl TranslatedString {
                 19417,
                 19429,
                 19437,
-                19447,
+                19437,
+                19452,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -16196,7 +16206,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -17506,7 +17517,8 @@ impl TranslatedString {
                 19417,
                 19429,
                 19437,
-                19447,
+                19437,
+                19452,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -18815,7 +18827,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -20125,7 +20138,8 @@ impl TranslatedString {
                 19417,
                 19429,
                 19437,
-                19447,
+                19437,
+                19452,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -21434,7 +21448,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -22744,7 +22759,8 @@ impl TranslatedString {
                 19417,
                 19429,
                 19437,
-                19447,
+                19437,
+                19452,
             ];
 
         } else if #[cfg(feature = "layout_delizia")] {
@@ -24054,7 +24070,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -25364,7 +25381,8 @@ impl TranslatedString {
                 20696,
                 20708,
                 20716,
-                20726,
+                20716,
+                20731,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -26673,7 +26691,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -27983,7 +28002,8 @@ impl TranslatedString {
                 20696,
                 20708,
                 20716,
-                20726,
+                20716,
+                20731,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -29292,7 +29312,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -30602,7 +30623,8 @@ impl TranslatedString {
                 20696,
                 20708,
                 20716,
-                20726,
+                20716,
+                20731,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -31911,7 +31933,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -33221,7 +33244,8 @@ impl TranslatedString {
                 20696,
                 20708,
                 20716,
-                20726,
+                20716,
+                20731,
             ];
 
         } else if #[cfg(feature = "layout_eckhart")] {
@@ -34531,7 +34555,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -35841,7 +35866,8 @@ impl TranslatedString {
                 21720,
                 21732,
                 21740,
-                21750,
+                21740,
+                21755,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -37150,7 +37176,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -38460,7 +38487,8 @@ impl TranslatedString {
                 21720,
                 21732,
                 21740,
-                21750,
+                21740,
+                21755,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -39769,7 +39797,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -41079,7 +41108,8 @@ impl TranslatedString {
                 21720,
                 21732,
                 21740,
-                21750,
+                21740,
+                21755,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -42388,7 +42418,8 @@ impl TranslatedString {
                 "Status",
                 "Total Supply",
                 "Unfreeze",
-                "Valid Till",
+                "",
+                "Validity window",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -43698,7 +43729,8 @@ impl TranslatedString {
                 21720,
                 21732,
                 21740,
-                21750,
+                21740,
+                21755,
             ];
 
         }
@@ -43909,7 +43941,7 @@ impl TranslatedString {
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__url, Self::algorand__url),
         #[cfg(feature = "universal_fw")]
-        (Qstr::MP_QSTR_algorand__valid_till, Self::algorand__valid_till),
+        (Qstr::MP_QSTR_algorand__validity_window, Self::algorand__validity_window),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__vote_first, Self::algorand__vote_first),
         #[cfg(feature = "universal_fw")]

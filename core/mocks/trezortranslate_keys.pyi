@@ -114,7 +114,7 @@ class TR:
     algorand__unit_name: str = "Unit name"
     algorand__unset: str = "Unset"
     algorand__url: str = "URL"
-    algorand__valid_till: str = "Valid Till"
+    algorand__validity_window: str = "Validity window"
     algorand__vote_first: str = "Vote first"
     algorand__vote_last: str = "Vote last"
     algorand__vote_pk: str = "Vote PK"

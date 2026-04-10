@@ -23,6 +23,20 @@ async def confirm_group_overview(transactions: list[Transaction]) -> None:
     """Show a compact summary of all transactions in an atomic group."""
     items: list[PropertyType] = []
 
+    # Network (same across all transactions in a group)
+    items.append(
+        (TR.algorand__network, format_network(transactions[0].genesis_id), None)
+    )
+
+    # Validity Window (intersection of all transactions)
+    max_fv = max(tx.first_valid for tx in transactions)
+    min_lv = min(tx.last_valid for tx in transactions)
+    validity_range = min_lv - max_fv
+    items.append(
+        (TR.algorand__validity_window, f"{max_fv}+{validity_range}", None)
+    )
+
+    # One line per transaction
     for i, tx in enumerate(transactions):
         abbrev = TX_TYPE_ABBREVS.get(tx.tx_type, "???")
         summary = _group_summary(tx)
@@ -163,14 +177,14 @@ async def confirm_transaction(
     # 3. Fee
     items.append((TR.algorand__fee, format_algo_amount(tx.fee), None))
 
-    # 4. Network
-    items.append((TR.algorand__network, format_network(tx.genesis_id), None))
-
-    # 5. Valid Till
-    valid_range = tx.last_valid - tx.first_valid
-    items.append(
-        (TR.algorand__valid_till, f"{tx.first_valid}+{valid_range}", None)
-    )
+    # 4-5. Network and Validity Window (only for single transactions;
+    #       for groups these are shown once in the group overview)
+    if group_index is None:
+        items.append((TR.algorand__network, format_network(tx.genesis_id), None))
+        valid_range = tx.last_valid - tx.first_valid
+        items.append(
+            (TR.algorand__validity_window, f"{tx.first_valid}+{valid_range}", None)
+        )
 
     # 6. Lease
     if tx.lease is not None:

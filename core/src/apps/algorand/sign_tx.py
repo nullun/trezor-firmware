@@ -122,6 +122,12 @@ async def sign_tx(
             if tx.group_id != expected_group_id:
                 raise DataError(f"Transaction {i} has wrong group ID")
 
+        # Validate that the group has a feasible validity window
+        max_fv = max(tx.first_valid for tx in transactions)
+        min_lv = min(tx.last_valid for tx in transactions)
+        if max_fv > min_lv:
+            raise DataError("Group has no valid submission window")
+
         # Show group overview before individual transactions
         await confirm_group_overview(transactions)
 

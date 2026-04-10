@@ -1303,5 +1303,6 @@
   "1301": "algorand__status",
   "1302": "algorand__total_supply",
   "1303": "algorand__unfreeze",
-  "1304": "algorand__valid_till"
+  "1304": "algorand__valid_till",
+  "1305": "algorand__validity_window"
 }

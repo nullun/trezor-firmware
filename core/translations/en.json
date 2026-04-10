@@ -120,7 +120,7 @@
     "algorand__falcon_pq": "FALCON-DET1024 (PQ)",
     "algorand__rekey_to": "Rekey To",
     "algorand__network": "Network",
-    "algorand__valid_till": "Valid Till",
+    "algorand__validity_window": "Validity window",
     "algorand__asset": "Asset",
     "algorand__asset_sender": "Asset Sender",
     "algorand__asset_receiver": "Asset Receiver",
