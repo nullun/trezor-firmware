@@ -1,43 +1,112 @@
 from typing import TYPE_CHECKING
 
 from trezor import TR
-from trezor.enums import ButtonRequestType
 from trezor.ui.layouts import confirm_properties, show_danger
 
-from .format import format_algo_amount, format_asset_amount, format_address
-from .types import TxType, TX_TYPE_NAMES, ON_COMPLETION_NAMES
+from .format import (
+    format_address,
+    format_algo_amount,
+    format_asset_amount,
+    format_network,
+    is_printable,
+)
+from .types import OnCompletion, TxType, TX_TYPE_ABBREVS
 
 if TYPE_CHECKING:
     from trezor.ui.layouts import PropertyType
+
     from .transaction import Transaction
 
 
 async def confirm_group_overview(transactions: list[Transaction]) -> None:
-    """Show a summary of all transactions in an atomic group."""
+    """Show a compact summary of all transactions in an atomic group."""
+    from .asa import get_asset_info
+
     items: list[PropertyType] = []
-    items.append(
-        (
-            TR.algorand__group_contains_template.format(len(transactions)),
-            "",
-            None,
-        )
-    )
 
     for i, tx in enumerate(transactions):
-        type_name = TX_TYPE_NAMES.get(tx.tx_type, "Unknown")
-        items.append(
-            (
-                TR.algorand__tx_index_template.format(i + 1, len(transactions)),
-                f"{type_name} from {format_address(tx.sender)[:8]}...",
-                None,
-            )
-        )
+        abbrev = TX_TYPE_ABBREVS.get(tx.tx_type, "???")
+        summary = _group_summary(tx)
+        items.append((f"#{i + 1}", f"{abbrev}  {summary}", None))
 
     await confirm_properties(
         "confirm_group",
         TR.algorand__group_overview,
         items,
     )
+
+
+def _group_summary(tx: Transaction) -> str:
+    """Generate a one-line summary for the group overview."""
+    from .asa import get_asset_info
+
+    td = tx.type_data
+
+    if tx.tx_type == TxType.PAYMENT:
+        return format_algo_amount(td["amount"])
+
+    elif tx.tx_type == TxType.APPLICATION:
+        app_id = td.get("app_id", 0)
+        return f"#{app_id}" if app_id else "Create"
+
+    elif tx.tx_type == TxType.ASSET_XFER:
+        asset_info = get_asset_info(td["asset_id"])
+        return format_asset_amount(
+            td["amount"], asset_info.decimals, asset_info.unit
+        )
+
+    elif tx.tx_type == TxType.ASSET_FREEZE:
+        status = "Freeze" if td["frozen"] else "Unfreeze"
+        return f"{status} #{td['asset_id']}"
+
+    elif tx.tx_type == TxType.ASSET_CONFIG:
+        asset_id = td.get("asset_id", 0)
+        if asset_id == 0:
+            return "Create"
+        elif td.get("params"):
+            return "Update"
+        else:
+            return "Destroy"
+
+    elif tx.tx_type == TxType.KEYREG:
+        return "Offline" if td.get("nonpart") else "Online"
+
+    return ""
+
+
+def _get_app_subtype(td: dict) -> str:
+    """Determine application call subtype for the header."""
+    app_id = td.get("app_id", 0)
+    oc = td.get("on_completion", OnCompletion.NOOP)
+
+    if app_id == 0:
+        if oc == OnCompletion.DELETE_APP:
+            return "Ephemeral"
+        return "Creation"
+
+    if oc == OnCompletion.NOOP:
+        return "Call"
+    elif oc == OnCompletion.OPT_IN:
+        return "OptIn"
+    elif oc == OnCompletion.CLOSE_OUT:
+        return "OptOut"
+    elif oc == OnCompletion.CLEAR_STATE:
+        return "Remove"
+    elif oc == OnCompletion.UPDATE_APP:
+        return "Update"
+    elif oc == OnCompletion.DELETE_APP:
+        return "Delete"
+    return "Call"
+
+
+def _get_acfg_subtype(td: dict) -> str:
+    """Determine asset config subtype for the header."""
+    asset_id = td.get("asset_id", 0)
+    if asset_id == 0:
+        return "Creation"
+    if td.get("params"):
+        return "Update"
+    return "Destroy"
 
 
 async def confirm_transaction(
@@ -52,36 +121,12 @@ async def confirm_transaction(
     from . import SIG_FALCON_DET1024
 
     items: list[PropertyType] = []
+    td = tx.type_data
 
-    # Transaction type header
-    type_name = TX_TYPE_NAMES.get(tx.tx_type, "Unknown")
-    if group_index is not None and group_size is not None:
-        type_name = f"{type_name} ({group_index + 1}/{group_size})"
+    # --- Build header: (i/n) TxnType [PQ] ---
+    header = _build_header(tx, group_index, group_size, signature_type)
 
-    # Highlight when the user is about to authorise a post-quantum
-    # FALCON signature instead of the default Ed25519 path.
-    if signature_type == SIG_FALCON_DET1024:
-        items.append((TR.algorand__signature_type, TR.algorand__falcon_pq, None))
-
-    # Common fields
-    items.append((TR.algorand__sender, format_address(tx.sender), None))
-    items.append((TR.algorand__fee, format_algo_amount(tx.fee), None))
-    items.append((TR.algorand__first_valid, str(tx.first_valid), None))
-    items.append((TR.algorand__last_valid, str(tx.last_valid), None))
-    items.append((TR.algorand__genesis_hash, base64.encode(tx.genesis_hash), None))
-
-    if tx.genesis_id is not None:
-        items.append((TR.algorand__genesis_id, tx.genesis_id, None))
-    if tx.lease is not None:
-        items.append((TR.algorand__lease, base64.encode(tx.lease), None))
-    if tx.group_id is not None:
-        items.append((TR.algorand__group_id, base64.encode(tx.group_id), None))
-    if tx.note is not None:
-        items.append(
-            (TR.algorand__note, f"{len(tx.note)} {TR.algorand__bytes}", None)
-        )
-
-    # Rekey warning
+    # --- Warning dialogs (shown before the properties screen) ---
     if tx.rekey is not None:
         await show_danger(
             title=TR.words__important,
@@ -89,17 +134,122 @@ async def confirm_transaction(
             br_name="confirm_rekey",
         )
 
-    # Type-specific fields
-    _add_type_items(items, tx)
+    close_to = _get_close_to(tx)
+    if close_to is not None:
+        await show_danger(
+            title=TR.words__important,
+            content=TR.algorand__close_to_warning,
+            br_name="confirm_close_to",
+        )
+
+    is_destroy = (
+        tx.tx_type == TxType.ASSET_CONFIG and _get_acfg_subtype(td) == "Destroy"
+    )
+    if is_destroy:
+        await show_danger(
+            title=TR.words__important,
+            content=TR.algorand__destroy_warning,
+            br_name="confirm_destroy",
+        )
+
+    # --- Common fields (spec order) ---
+
+    # 1. Rekey To
+    if tx.rekey is not None:
+        items.append((TR.algorand__rekey_to, format_address(tx.rekey), None))
+
+    # 2. Sender
+    items.append((TR.algorand__sender, format_address(tx.sender), None))
+
+    # 3. Fee
+    items.append((TR.algorand__fee, format_algo_amount(tx.fee), None))
+
+    # 4. Network
+    items.append((TR.algorand__network, format_network(tx.genesis_id), None))
+
+    # 5. Valid Till
+    valid_range = tx.last_valid - tx.first_valid
+    items.append(
+        (TR.algorand__valid_till, f"{tx.first_valid}+{valid_range}", None)
+    )
+
+    # 6. Lease
+    if tx.lease is not None:
+        items.append((TR.algorand__lease, base64.encode(tx.lease), None))
+
+    # --- Type-specific fields ---
+    if not is_destroy:
+        _add_type_items(items, tx)
+
+    # --- Note (shown last) ---
+    if tx.note is not None:
+        _add_note(items, tx.note)
 
     await confirm_properties(
         "confirm_transaction",
-        type_name,
+        header,
         items,
     )
 
 
+def _build_header(
+    tx: Transaction,
+    group_index: int | None,
+    group_size: int | None,
+    signature_type: int,
+) -> str:
+    """Build the header line: (i/n) TxnType [PQ]."""
+    from . import SIG_FALCON_DET1024
+    from .types import TX_TYPE_NAMES
+
+    td = tx.type_data
+
+    if tx.tx_type == TxType.ASSET_CONFIG:
+        subtype = _get_acfg_subtype(td)
+        type_name = f"Asset {subtype}"
+    elif tx.tx_type == TxType.APPLICATION:
+        subtype = _get_app_subtype(td)
+        if subtype == "Ephemeral":
+            type_name = "Ephemeral Application"
+        elif subtype == "Creation":
+            type_name = "Application Creation"
+        else:
+            type_name = f"Application {subtype}"
+    else:
+        type_name = TX_TYPE_NAMES.get(tx.tx_type, "Unknown")
+
+    parts: list[str] = []
+    if group_index is not None and group_size is not None:
+        parts.append(f"({group_index + 1}/{group_size})")
+    parts.append(type_name)
+    if signature_type == SIG_FALCON_DET1024:
+        parts.append("[PQ]")
+    return " ".join(parts)
+
+
+def _get_close_to(tx: Transaction) -> bytes | None:
+    """Get the close-to address from payment or asset transfer, if set."""
+    if tx.tx_type == TxType.PAYMENT:
+        return tx.type_data.get("close_to")
+    elif tx.tx_type == TxType.ASSET_XFER:
+        return tx.type_data.get("close_to")
+    return None
+
+
+def _add_note(items: list, note: bytes) -> None:
+    """Add note field: text if printable, otherwise base64."""
+    from trezor.crypto import base64
+
+    label = f"Note [{len(note)} bytes]"
+
+    if is_printable(note):
+        items.append((label, note.decode("ascii"), None))
+    else:
+        items.append((label, base64.encode(note), None))
+
+
 def _add_type_items(items: list, tx: Transaction) -> None:
+    """Add type-specific fields to the property list."""
     from trezor.crypto import base64
 
     from .asa import get_asset_info
@@ -107,8 +257,12 @@ def _add_type_items(items: list, tx: Transaction) -> None:
     td = tx.type_data
 
     if tx.tx_type == TxType.PAYMENT:
-        items.append((TR.algorand__receiver, format_address(td["receiver"]), None))
-        items.append((TR.algorand__amount, format_algo_amount(td["amount"]), None))
+        items.append(
+            (TR.algorand__receiver, format_address(td["receiver"]), None)
+        )
+        items.append(
+            (TR.algorand__amount, format_algo_amount(td["amount"]), None)
+        )
         if td.get("close_to") is not None:
             items.append(
                 (TR.algorand__close_to, format_address(td["close_to"]), None)
@@ -125,7 +279,11 @@ def _add_type_items(items: list, tx: Transaction) -> None:
             )
         if td.get("sprf_pk") is not None:
             items.append(
-                (TR.algorand__state_proof_pk, base64.encode(td["sprf_pk"]), None)
+                (
+                    TR.algorand__state_proof_pk,
+                    base64.encode(td["sprf_pk"]),
+                    None,
+                )
             )
         if td.get("vote_first") is not None:
             items.append(
@@ -141,7 +299,11 @@ def _add_type_items(items: list, tx: Transaction) -> None:
             )
         if td.get("nonpart"):
             items.append(
-                (TR.algorand__participating, TR.algorand__non_participation, None)
+                (
+                    TR.algorand__participating,
+                    TR.algorand__non_participation,
+                    None,
+                )
             )
         else:
             items.append((TR.algorand__participating, TR.words__yes, None))
@@ -149,7 +311,30 @@ def _add_type_items(items: list, tx: Transaction) -> None:
     elif tx.tx_type == TxType.ASSET_XFER:
         asset_id = td["asset_id"]
         asset_info = get_asset_info(asset_id)
-        items.append((TR.algorand__asset_id, asset_info.display_name, None))
+
+        # Asset Sender (only for clawback)
+        if td.get("sender") is not None:
+            items.append(
+                (
+                    TR.algorand__asset_sender,
+                    format_address(td["sender"]),
+                    None,
+                )
+            )
+
+        # Asset Receiver
+        items.append(
+            (
+                TR.algorand__asset_receiver,
+                format_address(td["receiver"]),
+                None,
+            )
+        )
+
+        # Asset
+        items.append((TR.algorand__asset, asset_info.display_name, None))
+
+        # Amount
         items.append(
             (
                 TR.algorand__amount,
@@ -159,13 +344,8 @@ def _add_type_items(items: list, tx: Transaction) -> None:
                 None,
             )
         )
-        items.append(
-            (TR.algorand__destination, format_address(td["receiver"]), None)
-        )
-        if td.get("sender") is not None:
-            items.append(
-                (TR.algorand__source, format_address(td["sender"]), None)
-            )
+
+        # Close To
         if td.get("close_to") is not None:
             items.append(
                 (TR.algorand__close_to, format_address(td["close_to"]), None)
@@ -174,180 +354,238 @@ def _add_type_items(items: list, tx: Transaction) -> None:
     elif tx.tx_type == TxType.ASSET_FREEZE:
         asset_id = td["asset_id"]
         asset_info = get_asset_info(asset_id)
-        items.append((TR.algorand__asset_id, asset_info.display_name, None))
+
+        items.append((TR.algorand__asset, asset_info.display_name, None))
         items.append(
             (TR.words__account, format_address(td["account"]), None)
         )
-        frozen_str = (
-            TR.algorand__frozen if td["frozen"] else TR.algorand__unfrozen
+        status = (
+            TR.algorand__freeze if td["frozen"] else TR.algorand__unfreeze
         )
-        items.append((TR.words__status, frozen_str, None))
+        items.append((TR.algorand__status, status, None))
 
     elif tx.tx_type == TxType.ASSET_CONFIG:
-        asset_id = td.get("asset_id", 0)
-        if asset_id == 0:
-            items.append(
-                (TR.algorand__asset_id, TR.algorand__create_asset, None)
-            )
-        else:
-            items.append((TR.algorand__asset_id, str(asset_id), None))
-        params = td.get("params", {})
-        if "total" in params:
-            items.append(
-                (TR.algorand__total_units, str(params["total"]), None)
-            )
-        if "default_frozen" in params:
-            items.append(
-                (
-                    TR.algorand__default_frozen,
-                    TR.words__yes
-                    if params["default_frozen"]
-                    else TR.words__no,
-                    None,
-                )
-            )
-        if "unit_name" in params:
-            items.append(
-                (TR.algorand__unit_name, params["unit_name"], None)
-            )
-        if "decimals" in params:
-            items.append(
-                (TR.algorand__decimals, str(params["decimals"]), None)
-            )
-        if "asset_name" in params:
-            items.append(
-                (TR.algorand__asset_name, params["asset_name"], None)
-            )
-        if "url" in params:
-            items.append((TR.algorand__url, params["url"], None))
-        if "metadata_hash" in params:
-            items.append(
-                (
-                    TR.algorand__metadata_hash,
-                    base64.encode(params["metadata_hash"]),
-                    None,
-                )
-            )
-        for role, key in [
-            ("manager", "manager"),
-            ("reserve", "reserve"),
-            ("freezer", "freeze"),
-            ("clawback", "clawback"),
-        ]:
-            if key in params:
-                addr = params[key]
-                label = getattr(TR, f"algorand__{role}")
-                if addr == b"\x00" * 32:
-                    items.append((label, TR.algorand__unset, None))
-                else:
-                    items.append((label, format_address(addr), None))
+        _add_asset_config_items(items, td)
 
     elif tx.tx_type == TxType.APPLICATION:
-        app_id = td.get("app_id", 0)
-        if app_id == 0:
+        _add_application_items(items, td)
+
+
+def _add_asset_config_items(items: list, td: dict) -> None:
+    """Add asset configuration fields in spec order."""
+    from trezor.crypto import base64
+    from trezor.strings import format_amount
+
+    params = td.get("params", {})
+
+    # Asset Name
+    if "asset_name" in params:
+        items.append(
+            (TR.algorand__asset_name, params["asset_name"], None)
+        )
+
+    # Unit Name
+    if "unit_name" in params:
+        items.append(
+            (TR.algorand__unit_name, params["unit_name"], None)
+        )
+
+    # Total Supply (derived from total units + decimals)
+    if "total" in params:
+        total = params["total"]
+        decimals = params.get("decimals", 0)
+        if decimals > 0:
+            total_str = format_amount(total, decimals)
+        else:
+            total_str = str(total)
+        items.append((TR.algorand__total_supply, total_str, None))
+
+    # URL (string if printable, otherwise base64)
+    if "url" in params:
+        url = params["url"]
+        if is_printable(url.encode()):
+            items.append((TR.algorand__url, url, None))
+        else:
             items.append(
-                (TR.algorand__app_id, TR.algorand__create_app, None)
+                (TR.algorand__url, base64.encode(url.encode()), None)
+            )
+
+    # Metadata Hash (string if printable, otherwise base64)
+    if "metadata_hash" in params:
+        mh = params["metadata_hash"]
+        if is_printable(mh):
+            items.append(
+                (TR.algorand__metadata_hash, mh.decode("ascii"), None)
             )
         else:
-            items.append((TR.algorand__app_id, str(app_id), None))
-
-        if "on_completion" in td:
-            oc_name = ON_COMPLETION_NAMES.get(td["on_completion"], "Unknown")
-            items.append((TR.algorand__on_completion, oc_name, None))
-
-        if td.get("num_accounts", 0) > 0:
             items.append(
-                (TR.algorand__accounts, str(td["num_accounts"]), None)
-            )
-        if td.get("num_foreign_apps", 0) > 0:
-            items.append(
-                (TR.algorand__foreign_apps, str(td["num_foreign_apps"]), None)
-            )
-        if td.get("num_foreign_assets", 0) > 0:
-            items.append(
-                (TR.algorand__foreign_assets, str(td["num_foreign_assets"]), None)
-            )
-        if td.get("num_app_args", 0) > 0:
-            items.append(
-                (
-                    TR.algorand__app_args,
-                    str(td["num_app_args"]) + " (shown as SHA-256)",
-                    None,
-                )
+                (TR.algorand__metadata_hash, base64.encode(mh), None)
             )
 
-        # Show app args as SHA-256 hashes
-        for i, arg in enumerate(td.get("app_args", [])):
-            from trezor.crypto.hashlib import sha256
+    # Manager, Reserve, Freezer, Clawback
+    for role, key in [
+        ("manager", "manager"),
+        ("reserve", "reserve"),
+        ("freezer", "freeze"),
+        ("clawback", "clawback"),
+    ]:
+        if key in params:
+            addr = params[key]
+            label = getattr(TR, f"algorand__{role}")
+            if addr == b"\x00" * 32:
+                items.append((label, TR.algorand__unset, None))
+            else:
+                items.append((label, format_address(addr), None))
 
-            arg_hash = sha256(arg).digest()
-            items.append((f"Arg {i}", base64.encode(arg_hash), None))
+    # Default Frozen
+    if "default_frozen" in params:
+        frozen_str = (
+            TR.words__yes if params["default_frozen"] else TR.words__no
+        )
+        items.append((TR.algorand__default_frozen, frozen_str, None))
 
-        for i, app_id in enumerate(td.get("foreign_apps", [])):
-            items.append((f"Foreign app {i}", str(app_id), None))
-        for i, asset_id in enumerate(td.get("foreign_assets", [])):
-            items.append((f"Foreign asset {i}", str(asset_id), None))
-        for i, acct in enumerate(td.get("accounts", [])):
-            items.append((f"Account {i}", format_address(acct), None))
 
-        if "approval_program" in td:
-            from trezor.crypto.hashlib import sha256
+def _add_application_items(items: list, td: dict) -> None:
+    """Add application call fields in spec order."""
+    from ubinascii import hexlify
 
-            prog = td["approval_program"]
+    from trezor.crypto.hashlib import sha256
+
+    # Application ID
+    app_id = td.get("app_id", 0)
+    items.append((TR.algorand__application, str(app_id), None))
+
+    # Args (printable string list if printable, otherwise count)
+    if "app_args" in td:
+        args = td["app_args"]
+        all_printable = all(
+            len(arg) > 0 and is_printable(arg) for arg in args
+        )
+        if all_printable:
+            args_str = ", ".join(arg.decode("ascii") for arg in args)
+            items.append((TR.algorand__args, args_str, None))
+        else:
             items.append(
-                (
-                    TR.algorand__approval_program,
-                    base64.encode(sha256(prog).digest()),
-                    None,
-                )
-            )
-        if "clear_program" in td:
-            from trezor.crypto.hashlib import sha256
-
-            prog = td["clear_program"]
-            items.append(
-                (
-                    TR.algorand__clear_program,
-                    base64.encode(sha256(prog).digest()),
-                    None,
-                )
+                (TR.algorand__args, f"{len(args)} args", None)
             )
 
-        if "global_schema" in td:
-            schema = td["global_schema"]
-            items.append(
-                (
-                    TR.algorand__global_schema,
-                    f"uint: {schema['num_uint']}, bytes: {schema['num_byteslice']}",
-                    None,
-                )
+    # References or Access List (mutually exclusive)
+    if "access_list" in td:
+        _add_access_list_items(items, td["access_list"])
+    else:
+        _add_reference_items(items, td)
+
+    # Approval Program (hex SHA-256)
+    if "approval_program" in td:
+        prog_hash = sha256(td["approval_program"]).digest()
+        items.append(
+            (
+                TR.algorand__approval_program,
+                hexlify(prog_hash).decode(),
+                None,
             )
-        if "local_schema" in td:
-            schema = td["local_schema"]
-            items.append(
-                (
-                    TR.algorand__local_schema,
-                    f"uint: {schema['num_uint']}, bytes: {schema['num_byteslice']}",
-                    None,
-                )
+        )
+
+    # Clear Program (hex SHA-256)
+    if "clear_program" in td:
+        prog_hash = sha256(td["clear_program"]).digest()
+        items.append(
+            (
+                TR.algorand__clear_program,
+                hexlify(prog_hash).decode(),
+                None,
             )
-        if "extra_pages" in td:
-            items.append(
-                (TR.algorand__extra_pages, str(td["extra_pages"]), None)
+        )
+
+    # Global Schema
+    if "global_schema" in td:
+        schema = td["global_schema"]
+        items.append(
+            (
+                TR.algorand__global_schema,
+                f"uint: {schema['num_uint']}, bytes: {schema['num_byteslice']}",
+                None,
             )
-        if "reject_version" in td and td["reject_version"] > 0:
-            items.append(
-                (TR.algorand__reject_version, str(td["reject_version"]), None)
+        )
+
+    # Local Schema
+    if "local_schema" in td:
+        schema = td["local_schema"]
+        items.append(
+            (
+                TR.algorand__local_schema,
+                f"uint: {schema['num_uint']}, bytes: {schema['num_byteslice']}",
+                None,
             )
-        if "boxes" in td:
-            for i, box in enumerate(td["boxes"]):
-                items.append(
-                    (
-                        f"Box {i}",
-                        f"index: {box['i']}, name: {base64.encode(box['n'])}",
-                        None,
-                    )
-                )
+        )
+
+    # Extra Pages
+    if "extra_pages" in td:
+        items.append(
+            (TR.algorand__extra_pages, str(td["extra_pages"]), None)
+        )
+
+    # Reject Version
+    if "reject_version" in td and td["reject_version"] > 0:
+        items.append(
+            (TR.algorand__reject_version, str(td["reject_version"]), None)
+        )
+
+
+def _add_reference_items(items: list, td: dict) -> None:
+    """Add reference counts for old-style foreign references."""
+    if td.get("num_accounts", 0) > 0:
+        items.append(
+            (TR.algorand__accounts, str(td["num_accounts"]), None)
+        )
+    if td.get("num_foreign_apps", 0) > 0:
+        items.append(
+            (TR.algorand__applications, str(td["num_foreign_apps"]), None)
+        )
+    if td.get("num_foreign_assets", 0) > 0:
+        items.append(
+            (TR.algorand__assets, str(td["num_foreign_assets"]), None)
+        )
+    if td.get("boxes") and len(td["boxes"]) > 0:
+        items.append(
+            (TR.algorand__boxes, str(len(td["boxes"])), None)
+        )
+
+
+def _add_access_list_items(items: list, al: list) -> None:
+    """Add counts for access list resources by type."""
+    counts = {"d": 0, "p": 0, "s": 0, "h": 0, "l": 0, "b": 0}
+    for entry in al:
+        if isinstance(entry, dict):
+            for key in ("d", "p", "s", "h", "l", "b"):
+                if key in entry:
+                    counts[key] += 1
+                    break
+
+    if counts["d"] > 0:
+        items.append(
+            (TR.algorand__accounts, str(counts["d"]), None)
+        )
+    if counts["p"] > 0:
+        items.append(
+            (TR.algorand__applications, str(counts["p"]), None)
+        )
+    if counts["s"] > 0:
+        items.append(
+            (TR.algorand__assets, str(counts["s"]), None)
+        )
+    if counts["h"] > 0:
+        items.append(
+            (TR.algorand__holdings, str(counts["h"]), None)
+        )
+    if counts["l"] > 0:
+        items.append(
+            (TR.algorand__locals, str(counts["l"]), None)
+        )
+    if counts["b"] > 0:
+        items.append(
+            (TR.algorand__boxes, str(counts["b"]), None)
+        )
 
 
 async def confirm_data_signing(
@@ -375,7 +613,9 @@ async def confirm_data_signing(
         parsed = _parse_json_object(data_str)
         if parsed is not None:
             for key, value in parsed:
-                display_value = value if len(value) <= 256 else value[:253] + "..."
+                display_value = (
+                    value if len(value) <= 256 else value[:253] + "..."
+                )
                 items.append((key, display_value, None))
         else:
             if len(data_str) > 256:
@@ -387,7 +627,11 @@ async def confirm_data_signing(
         )
 
     items.append(
-        (TR.algorand__auth_data, f"{len(auth_data)} {TR.algorand__bytes}", None)
+        (
+            TR.algorand__auth_data,
+            f"{len(auth_data)} {TR.algorand__bytes}",
+            None,
+        )
     )
 
     await confirm_properties(
