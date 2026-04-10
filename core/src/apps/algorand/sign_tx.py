@@ -129,7 +129,7 @@ async def sign_tx(
             raise DataError("Group has no valid submission window")
 
         # Show group overview before individual transactions
-        await confirm_group_overview(transactions)
+        await confirm_group_overview(transactions, signer_address_bytes)
 
     try:
         # Verify at least one transaction has sender == signer
@@ -148,6 +148,7 @@ async def sign_tx(
                 group_index=i if group_size > 1 else None,
                 group_size=group_size if group_size > 1 else None,
                 signature_type=sig_type,
+                signer_address=signer_address_bytes if group_size > 1 else None,
             )
 
         # Sign transactions where sender matches the derived key

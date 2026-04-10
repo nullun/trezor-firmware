@@ -19,7 +19,10 @@ if TYPE_CHECKING:
     from .transaction import Transaction
 
 
-async def confirm_group_overview(transactions: list[Transaction]) -> None:
+async def confirm_group_overview(
+    transactions: list[Transaction],
+    signer_address: bytes,
+) -> None:
     """Show a compact summary of all transactions in an atomic group."""
     items: list[PropertyType] = []
 
@@ -40,7 +43,8 @@ async def confirm_group_overview(transactions: list[Transaction]) -> None:
     lines = []
     for tx in transactions:
         abbrev = TX_TYPE_ABBREVS.get(tx.tx_type, "???")
-        lines.append(f"{abbrev}  {_group_summary(tx)}")
+        marker = ">" if tx.sender == signer_address else " "
+        lines.append(f"{marker} {abbrev}  {_group_summary(tx)}")
     items.append(
         (f"{len(transactions)} transactions", "\n".join(lines), None)
     )
@@ -130,6 +134,7 @@ async def confirm_transaction(
     group_index: int | None = None,
     group_size: int | None = None,
     signature_type: int = 0,
+    signer_address: bytes | None = None,
 ) -> None:
     """Show transaction details for user confirmation."""
     from trezor.crypto import base64
@@ -174,8 +179,15 @@ async def confirm_transaction(
     if tx.rekey is not None:
         items.append((TR.algorand__rekey_to, format_address(tx.rekey), None))
 
-    # Sender
-    items.append((TR.algorand__sender, format_address(tx.sender), None))
+    # Sender (annotated with signing status in groups)
+    if signer_address is not None:
+        if tx.sender == signer_address:
+            sender_label = TR.algorand__sender_signing
+        else:
+            sender_label = TR.algorand__sender_not_signing
+    else:
+        sender_label = TR.algorand__sender
+    items.append((sender_label, format_address(tx.sender), None))
 
     # Type-specific fields (before fee so the key details come first)
     if not is_destroy:

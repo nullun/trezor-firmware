@@ -99,6 +99,8 @@ class TR:
     algorand__request_id: str = "Request ID"
     algorand__reserve: str = "Reserve"
     algorand__sender: str = "Sender"
+    algorand__sender_not_signing: str = "Sender (not signing)"
+    algorand__sender_signing: str = "Sender (signing)"
     algorand__sign_data: str = "Sign data"
     algorand__signature_type: str = "Signature"
     algorand__signer: str = "Signer"

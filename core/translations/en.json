@@ -52,6 +52,8 @@
     "algorand__asset_config": "Asset config",
     "algorand__application_call": "Application call",
     "algorand__sender": "Sender",
+    "algorand__sender_signing": "Sender (signing)",
+    "algorand__sender_not_signing": "Sender (not signing)",
     "algorand__receiver": "Receiver",
     "algorand__amount": "Amount",
     "algorand__fee": "Fee",

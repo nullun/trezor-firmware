@@ -1789,6 +1789,10 @@ pub enum TranslatedString {
     algorand__unfreeze = 1303,  // "Unfreeze"
     #[cfg(feature = "universal_fw")]
     algorand__validity_window = 1305,  // "Validity window"
+    #[cfg(feature = "universal_fw")]
+    algorand__sender_not_signing = 1306,  // "Sender (not signing)"
+    #[cfg(feature = "universal_fw")]
+    algorand__sender_signing = 1307,  // "Sender (signing)"
 }
 
 impl TranslatedString {
@@ -3102,6 +3106,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -4413,6 +4419,8 @@ impl TranslatedString {
                 21412,
                 21412,
                 21427,
+                21447,
+                21463,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -5723,6 +5731,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -7034,6 +7044,8 @@ impl TranslatedString {
                 21412,
                 21412,
                 21427,
+                21447,
+                21463,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -8344,6 +8356,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -9655,6 +9669,8 @@ impl TranslatedString {
                 21412,
                 21412,
                 21427,
+                21447,
+                21463,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -10965,6 +10981,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -12276,6 +12294,8 @@ impl TranslatedString {
                 21412,
                 21412,
                 21427,
+                21447,
+                21463,
             ];
 
         } else if #[cfg(feature = "layout_caesar")] {
@@ -13587,6 +13607,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -14898,6 +14920,8 @@ impl TranslatedString {
                 19437,
                 19437,
                 19452,
+                19472,
+                19488,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -16208,6 +16232,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -17519,6 +17545,8 @@ impl TranslatedString {
                 19437,
                 19437,
                 19452,
+                19472,
+                19488,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -18829,6 +18857,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -20140,6 +20170,8 @@ impl TranslatedString {
                 19437,
                 19437,
                 19452,
+                19472,
+                19488,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -21450,6 +21482,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -22761,6 +22795,8 @@ impl TranslatedString {
                 19437,
                 19437,
                 19452,
+                19472,
+                19488,
             ];
 
         } else if #[cfg(feature = "layout_delizia")] {
@@ -24072,6 +24108,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -25383,6 +25421,8 @@ impl TranslatedString {
                 20716,
                 20716,
                 20731,
+                20751,
+                20767,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -26693,6 +26733,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -28004,6 +28046,8 @@ impl TranslatedString {
                 20716,
                 20716,
                 20731,
+                20751,
+                20767,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -29314,6 +29358,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -30625,6 +30671,8 @@ impl TranslatedString {
                 20716,
                 20716,
                 20731,
+                20751,
+                20767,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -31935,6 +31983,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -33246,6 +33296,8 @@ impl TranslatedString {
                 20716,
                 20716,
                 20731,
+                20751,
+                20767,
             ];
 
         } else if #[cfg(feature = "layout_eckhart")] {
@@ -34557,6 +34609,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -35868,6 +35922,8 @@ impl TranslatedString {
                 21740,
                 21740,
                 21755,
+                21775,
+                21791,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -37178,6 +37234,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -38489,6 +38547,8 @@ impl TranslatedString {
                 21740,
                 21740,
                 21755,
+                21775,
+                21791,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -39799,6 +39859,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -41110,6 +41172,8 @@ impl TranslatedString {
                 21740,
                 21740,
                 21755,
+                21775,
+                21791,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -42420,6 +42484,8 @@ impl TranslatedString {
                 "Unfreeze",
                 "",
                 "Validity window",
+                "Sender (not signing)",
+                "Sender (signing)",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -43731,6 +43797,8 @@ impl TranslatedString {
                 21740,
                 21740,
                 21755,
+                21775,
+                21791,
             ];
 
         }
@@ -43910,6 +43978,10 @@ impl TranslatedString {
         (Qstr::MP_QSTR_algorand__reserve, Self::algorand__reserve),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__sender, Self::algorand__sender),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__sender_not_signing, Self::algorand__sender_not_signing),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__sender_signing, Self::algorand__sender_signing),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__sign_data, Self::algorand__sign_data),
         #[cfg(feature = "universal_fw")]
