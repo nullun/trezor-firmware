@@ -1154,7 +1154,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_algorand__unit_name;
   MP_QSTR_algorand__unset;
   MP_QSTR_algorand__url;
-  MP_QSTR_algorand__valid_till;
+  MP_QSTR_algorand__validity_window;
   MP_QSTR_algorand__vote_first;
   MP_QSTR_algorand__vote_last;
   MP_QSTR_algorand__vote_pk;

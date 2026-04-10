@@ -168,20 +168,24 @@ async def confirm_transaction(
             br_name="confirm_destroy",
         )
 
-    # --- Common fields (spec order) ---
+    # --- Common fields ---
 
-    # 1. Rekey To
+    # Rekey To
     if tx.rekey is not None:
         items.append((TR.algorand__rekey_to, format_address(tx.rekey), None))
 
-    # 2. Sender
+    # Sender
     items.append((TR.algorand__sender, format_address(tx.sender), None))
 
-    # 3. Fee
+    # Type-specific fields (before fee so the key details come first)
+    if not is_destroy:
+        _add_type_items(items, tx)
+
+    # Fee
     items.append((TR.algorand__fee, format_algo_amount(tx.fee), None))
 
-    # 4-5. Network and Validity Window (only for single transactions;
-    #       for groups these are shown once in the group overview)
+    # Network and Validity Window (only for single transactions;
+    # for groups these are shown once in the group overview)
     if group_index is None:
         items.append((TR.algorand__network, format_network(tx.genesis_id), None))
         valid_range = tx.last_valid - tx.first_valid
@@ -189,15 +193,11 @@ async def confirm_transaction(
             (TR.algorand__validity_window, f"{tx.first_valid}+{valid_range}", None)
         )
 
-    # 6. Lease
+    # Lease
     if tx.lease is not None:
         items.append((TR.algorand__lease, truncate_middle(base64.encode(tx.lease)), None))
 
-    # --- Type-specific fields ---
-    if not is_destroy:
-        _add_type_items(items, tx)
-
-    # --- Note (shown last) ---
+    # Note (shown last)
     if tx.note is not None:
         _add_note(items, tx.note)
 
