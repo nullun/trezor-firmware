@@ -15,11 +15,18 @@ def format_asset_amount(amount: int, decimals: int, unit: str) -> str:
     return format_amount_unit(format_amount(amount, decimals), unit)
 
 
+def truncate_middle(s: str) -> str:
+    """Middle-truncate a string to 18 characters (8..8) if longer."""
+    if len(s) <= 18:
+        return s
+    return f"{s[:8]}..{s[-8:]}"
+
+
 def format_address(address_bytes: bytes) -> str:
-    """Format a 32-byte address as a 58-char Algorand address string."""
+    """Format a 32-byte address as a middle-truncated Algorand address."""
     from .addresses import public_key_to_address
 
-    return public_key_to_address(address_bytes)
+    return truncate_middle(public_key_to_address(address_bytes))
 
 
 _KNOWN_NETWORKS: dict[str, str] = {

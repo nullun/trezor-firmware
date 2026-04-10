@@ -9,6 +9,7 @@ from .format import (
     format_asset_amount,
     format_network,
     is_printable,
+    truncate_middle,
 )
 from .types import OnCompletion, TxType, TX_TYPE_ABBREVS
 
@@ -173,7 +174,7 @@ async def confirm_transaction(
 
     # 6. Lease
     if tx.lease is not None:
-        items.append((TR.algorand__lease, base64.encode(tx.lease), None))
+        items.append((TR.algorand__lease, truncate_middle(base64.encode(tx.lease)), None))
 
     # --- Type-specific fields ---
     if not is_destroy:
@@ -269,17 +270,17 @@ def _add_type_items(items: list, tx: Transaction) -> None:
     elif tx.tx_type == TxType.KEYREG:
         if td.get("vote_pk") is not None:
             items.append(
-                (TR.algorand__vote_pk, base64.encode(td["vote_pk"]), None)
+                (TR.algorand__vote_pk, truncate_middle(base64.encode(td["vote_pk"])), None)
             )
         if td.get("vrf_pk") is not None:
             items.append(
-                (TR.algorand__vrf_pk, base64.encode(td["vrf_pk"]), None)
+                (TR.algorand__vrf_pk, truncate_middle(base64.encode(td["vrf_pk"])), None)
             )
         if td.get("sprf_pk") is not None:
             items.append(
                 (
                     TR.algorand__state_proof_pk,
-                    base64.encode(td["sprf_pk"]),
+                    truncate_middle(base64.encode(td["sprf_pk"])),
                     None,
                 )
             )
@@ -417,7 +418,7 @@ def _add_asset_config_items(items: list, td: dict) -> None:
             )
         else:
             items.append(
-                (TR.algorand__metadata_hash, base64.encode(mh), None)
+                (TR.algorand__metadata_hash, truncate_middle(base64.encode(mh)), None)
             )
 
     # Manager, Reserve, Freezer, Clawback
@@ -479,7 +480,7 @@ def _add_application_items(items: list, td: dict) -> None:
         items.append(
             (
                 TR.algorand__approval_program,
-                hexlify(prog_hash).decode(),
+                truncate_middle(hexlify(prog_hash).decode()),
                 None,
             )
         )
@@ -490,7 +491,7 @@ def _add_application_items(items: list, td: dict) -> None:
         items.append(
             (
                 TR.algorand__clear_program,
-                hexlify(prog_hash).decode(),
+                truncate_middle(hexlify(prog_hash).decode()),
                 None,
             )
         )
