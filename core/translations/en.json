@@ -54,6 +54,7 @@
     "algorand__sender": "Sender",
     "algorand__sender_signing": "Sender (signing)",
     "algorand__sender_not_signing": "Sender (not signing)",
+    "algorand__review_all": "Review all",
     "algorand__receiver": "Receiver",
     "algorand__amount": "Amount",
     "algorand__fee": "Fee",

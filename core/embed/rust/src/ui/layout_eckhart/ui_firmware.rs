@@ -392,6 +392,7 @@ impl FirmwareUI for UIEckhart {
         hold: bool,
         verb: Option<TString<'static>>,
         _external_menu: bool,
+        extra_menu_label: Option<TString<'static>>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
         let paragraphs = PropsList::new_styled(
             items,
@@ -404,8 +405,16 @@ impl FirmwareUI for UIEckhart {
         .into_paragraphs()
         .with_placement(LinearPlacement::vertical());
 
-        let flow =
-            flow::new_confirm_with_menu(title, None, paragraphs, None, verb, hold, None, None)?;
+        let flow = flow::new_confirm_with_menu(
+            title,
+            None,
+            paragraphs,
+            None,
+            verb,
+            hold,
+            extra_menu_label,
+            None,
+        )?;
         Ok(flow)
     }
 

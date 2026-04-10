@@ -1306,5 +1306,6 @@
   "1304": "algorand__valid_till",
   "1305": "algorand__validity_window",
   "1306": "algorand__sender_not_signing",
-  "1307": "algorand__sender_signing"
+  "1307": "algorand__sender_signing",
+  "1308": "algorand__review_all"
 }

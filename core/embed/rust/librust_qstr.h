@@ -338,6 +338,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_external_menu;
   MP_QSTR_extra;
   MP_QSTR_extra_items;
+  MP_QSTR_extra_menu_label;
   MP_QSTR_extra_title;
   MP_QSTR_fee;
   MP_QSTR_fee_label;
@@ -1138,7 +1139,10 @@ static void _librust_qstrs(void) {
   MP_QSTR_algorand__rekey_warning;
   MP_QSTR_algorand__request_id;
   MP_QSTR_algorand__reserve;
+  MP_QSTR_algorand__review_all;
   MP_QSTR_algorand__sender;
+  MP_QSTR_algorand__sender_not_signing;
+  MP_QSTR_algorand__sender_signing;
   MP_QSTR_algorand__sign_data;
   MP_QSTR_algorand__signature_type;
   MP_QSTR_algorand__signer;

@@ -438,6 +438,7 @@ impl FirmwareUI for UICaesar {
         hold: bool,
         verb: Option<TString<'static>>,
         external_menu: bool,
+        _extra_menu_label: Option<TString<'static>>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
         let paragraphs = parse_properties(items)?;
 

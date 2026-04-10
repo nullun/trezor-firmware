@@ -129,7 +129,9 @@ async def sign_tx(
             raise DataError("Group has no valid submission window")
 
         # Show group overview before individual transactions
-        await confirm_group_overview(transactions, signer_address_bytes)
+        review_all = await confirm_group_overview(
+            transactions, signer_address_bytes
+        )
 
     try:
         # Verify at least one transaction has sender == signer
@@ -141,14 +143,38 @@ async def sign_tx(
         if not signer_tx_indices:
             raise DataError("No transaction in the group matches the signer")
 
-        # Show UI confirmation for each transaction
-        for i, tx in enumerate(transactions):
+        # Show UI confirmation for each transaction.
+        # For groups: by default only show transactions we're signing.
+        # If the user presses "Review all" (from the context menu), restart
+        # the loop and show every transaction in the group.
+        if group_size > 1:
+            while True:
+                restart = False
+                visible = [
+                    (i, tx) for i, tx in enumerate(transactions)
+                    if review_all or tx.sender == signer_address_bytes
+                ]
+                for review_idx, (i, tx) in enumerate(visible):
+                    info_pressed = await confirm_transaction(
+                        tx,
+                        group_index=i,
+                        group_size=group_size,
+                        signature_type=sig_type,
+                        signer_address=signer_address_bytes,
+                        show_review_all=not review_all,
+                        review_index=review_idx,
+                        review_count=len(visible),
+                    )
+                    if info_pressed:
+                        review_all = True
+                        restart = True
+                        break
+                if not restart:
+                    break
+        else:
             await confirm_transaction(
-                tx,
-                group_index=i if group_size > 1 else None,
-                group_size=group_size if group_size > 1 else None,
+                transactions[0],
                 signature_type=sig_type,
-                signer_address=signer_address_bytes if group_size > 1 else None,
             )
 
         # Sign transactions where sender matches the derived key

@@ -98,6 +98,7 @@ class TR:
     algorand__rekey_warning: str = "This transaction will rekey your account. All future transactions will need to be signed by the new key. This is a dangerous operation!"
     algorand__request_id: str = "Request ID"
     algorand__reserve: str = "Reserve"
+    algorand__review_all: str = "Review all"
     algorand__sender: str = "Sender"
     algorand__sender_not_signing: str = "Sender (not signing)"
     algorand__sender_signing: str = "Sender (signing)"

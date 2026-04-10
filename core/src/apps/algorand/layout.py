@@ -19,11 +19,46 @@ if TYPE_CHECKING:
     from .transaction import Transaction
 
 
+async def _confirm_properties_with_menu(
+    br_name: str,
+    title: str,
+    props: list[PropertyType],
+    extra_menu_label: str | None = None,
+) -> bool:
+    """Confirm properties, optionally showing an extra menu item.
+
+    Returns True if the user pressed the extra menu item (Info),
+    False if confirmed normally. Raises ActionCancelled on cancel.
+    """
+    import trezorui_api
+
+    from trezor.enums import ButtonRequestType
+    from trezor.ui.layouts.common import interact
+
+    layout = trezorui_api.confirm_properties(
+        title=title,
+        items=props,
+        hold=False,
+        extra_menu_label=extra_menu_label,
+    )
+    result = await interact(
+        layout, br_name, ButtonRequestType.ConfirmOutput
+    )
+    if result is trezorui_api.CONFIRMED:
+        return False
+    if result is trezorui_api.INFO:
+        return True
+    raise RuntimeError  # unexpected result
+
+
 async def confirm_group_overview(
     transactions: list[Transaction],
     signer_address: bytes,
-) -> None:
-    """Show a compact summary of all transactions in an atomic group."""
+) -> bool:
+    """Show a compact summary of all transactions in an atomic group.
+
+    Returns True if the user pressed "Review all", False if confirmed.
+    """
     items: list[PropertyType] = []
 
     # Network (same across all transactions in a group)
@@ -49,10 +84,11 @@ async def confirm_group_overview(
         (f"{len(transactions)} transactions", "\n".join(lines), None)
     )
 
-    await confirm_properties(
+    return await _confirm_properties_with_menu(
         "confirm_group",
         TR.algorand__group_overview,
         items,
+        extra_menu_label=TR.algorand__review_all,
     )
 
 
@@ -135,8 +171,18 @@ async def confirm_transaction(
     group_size: int | None = None,
     signature_type: int = 0,
     signer_address: bytes | None = None,
-) -> None:
-    """Show transaction details for user confirmation."""
+    show_review_all: bool = False,
+    review_index: int | None = None,
+    review_count: int | None = None,
+) -> bool:
+    """Show transaction details for user confirmation.
+
+    If show_review_all is True, the hamburger menu includes a "Review all"
+    option. Returns True if "Review all" was pressed, False if confirmed.
+
+    review_index/review_count control the (i/n) header counter and reflect
+    only the transactions being shown (not the full group).
+    """
     from trezor.crypto import base64
 
     from . import SIG_FALCON_DET1024
@@ -145,7 +191,10 @@ async def confirm_transaction(
     td = tx.type_data
 
     # --- Build header: (i/n) TxnType [PQ] ---
-    header = _build_header(tx, group_index, group_size, signature_type)
+    header = _build_header(
+        tx, group_index, group_size, signature_type,
+        review_index, review_count,
+    )
 
     # --- Warning dialogs (shown before the properties screen) ---
     if tx.rekey is not None:
@@ -213,11 +262,20 @@ async def confirm_transaction(
     if tx.note is not None:
         _add_note(items, tx.note)
 
-    await confirm_properties(
-        "confirm_transaction",
-        header,
-        items,
-    )
+    if show_review_all:
+        return await _confirm_properties_with_menu(
+            "confirm_transaction",
+            header,
+            items,
+            extra_menu_label=TR.algorand__review_all,
+        )
+    else:
+        await confirm_properties(
+            "confirm_transaction",
+            header,
+            items,
+        )
+        return False
 
 
 def _build_header(
@@ -225,8 +283,14 @@ def _build_header(
     group_index: int | None,
     group_size: int | None,
     signature_type: int,
+    review_index: int | None = None,
+    review_count: int | None = None,
 ) -> str:
-    """Build the header line: (i/n) TxnType [PQ]."""
+    """Build the header line: (i/n) TxnType [PQ].
+
+    review_index/review_count override group_index/group_size for the
+    counter when showing a subset of the group's transactions.
+    """
     from . import SIG_FALCON_DET1024
     from .types import TX_TYPE_NAMES
 
@@ -247,8 +311,10 @@ def _build_header(
         type_name = TX_TYPE_NAMES.get(tx.tx_type, "Unknown")
 
     parts: list[str] = []
-    if group_index is not None and group_size is not None:
-        parts.append(f"({group_index + 1}/{group_size})")
+    idx = review_index if review_index is not None else group_index
+    cnt = review_count if review_count is not None else group_size
+    if idx is not None and cnt is not None:
+        parts.append(f"({idx + 1}/{cnt})")
     parts.append(type_name)
     if signature_type == SIG_FALCON_DET1024:
         parts.append("[PQ]")

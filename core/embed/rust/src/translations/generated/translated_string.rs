@@ -1793,6 +1793,8 @@ pub enum TranslatedString {
     algorand__sender_not_signing = 1306,  // "Sender (not signing)"
     #[cfg(feature = "universal_fw")]
     algorand__sender_signing = 1307,  // "Sender (signing)"
+    #[cfg(feature = "universal_fw")]
+    algorand__review_all = 1308,  // "Review all"
 }
 
 impl TranslatedString {
@@ -3108,6 +3110,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -4421,6 +4424,7 @@ impl TranslatedString {
                 21427,
                 21447,
                 21463,
+                21473,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -5733,6 +5737,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -7046,6 +7051,7 @@ impl TranslatedString {
                 21427,
                 21447,
                 21463,
+                21473,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -8358,6 +8364,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -9671,6 +9678,7 @@ impl TranslatedString {
                 21427,
                 21447,
                 21463,
+                21473,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -10983,6 +10991,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -12296,6 +12305,7 @@ impl TranslatedString {
                 21427,
                 21447,
                 21463,
+                21473,
             ];
 
         } else if #[cfg(feature = "layout_caesar")] {
@@ -13609,6 +13619,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -14922,6 +14933,7 @@ impl TranslatedString {
                 19452,
                 19472,
                 19488,
+                19498,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -16234,6 +16246,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -17547,6 +17560,7 @@ impl TranslatedString {
                 19452,
                 19472,
                 19488,
+                19498,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -18859,6 +18873,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -20172,6 +20187,7 @@ impl TranslatedString {
                 19452,
                 19472,
                 19488,
+                19498,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -21484,6 +21500,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -22797,6 +22814,7 @@ impl TranslatedString {
                 19452,
                 19472,
                 19488,
+                19498,
             ];
 
         } else if #[cfg(feature = "layout_delizia")] {
@@ -24110,6 +24128,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -25423,6 +25442,7 @@ impl TranslatedString {
                 20731,
                 20751,
                 20767,
+                20777,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -26735,6 +26755,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -28048,6 +28069,7 @@ impl TranslatedString {
                 20731,
                 20751,
                 20767,
+                20777,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -29360,6 +29382,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -30673,6 +30696,7 @@ impl TranslatedString {
                 20731,
                 20751,
                 20767,
+                20777,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -31985,6 +32009,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -33298,6 +33323,7 @@ impl TranslatedString {
                 20731,
                 20751,
                 20767,
+                20777,
             ];
 
         } else if #[cfg(feature = "layout_eckhart")] {
@@ -34611,6 +34637,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(feature = "debug", feature = "universal_fw"))]
@@ -35924,6 +35951,7 @@ impl TranslatedString {
                 21755,
                 21775,
                 21791,
+                21801,
             ];
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -37236,6 +37264,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(feature = "debug", not(feature = "universal_fw")))]
@@ -38549,6 +38578,7 @@ impl TranslatedString {
                 21755,
                 21775,
                 21791,
+                21801,
             ];
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -39861,6 +39891,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(not(feature = "debug"), feature = "universal_fw"))]
@@ -41174,6 +41205,7 @@ impl TranslatedString {
                 21755,
                 21775,
                 21791,
+                21801,
             ];
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -42486,6 +42518,7 @@ impl TranslatedString {
                 "Validity window",
                 "Sender (not signing)",
                 "Sender (signing)",
+                "Review all",
             );
 
             #[cfg(all(not(feature = "debug"), not(feature = "universal_fw")))]
@@ -43799,6 +43832,7 @@ impl TranslatedString {
                 21755,
                 21775,
                 21791,
+                21801,
             ];
 
         }
@@ -43976,6 +44010,8 @@ impl TranslatedString {
         (Qstr::MP_QSTR_algorand__request_id, Self::algorand__request_id),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__reserve, Self::algorand__reserve),
+        #[cfg(feature = "universal_fw")]
+        (Qstr::MP_QSTR_algorand__review_all, Self::algorand__review_all),
         #[cfg(feature = "universal_fw")]
         (Qstr::MP_QSTR_algorand__sender, Self::algorand__sender),
         #[cfg(feature = "universal_fw")]

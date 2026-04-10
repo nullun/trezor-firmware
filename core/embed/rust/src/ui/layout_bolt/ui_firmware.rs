@@ -397,6 +397,7 @@ impl FirmwareUI for UIBolt {
         hold: bool,
         verb: Option<TString<'static>>,
         external_menu: bool,
+        _extra_menu_label: Option<TString<'static>>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
         let paragraphs = PropsList::new(items)?;
         let page = if hold {

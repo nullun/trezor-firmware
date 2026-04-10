@@ -142,6 +142,7 @@ pub trait FirmwareUI {
         hold: bool,
         verb: Option<TString<'static>>,
         external_menu: bool,
+        extra_menu_label: Option<TString<'static>>,
     ) -> Result<impl LayoutMaybeTrace, Error>;
 
     fn confirm_reset_device(recovery: bool) -> Result<impl LayoutMaybeTrace, Error>;

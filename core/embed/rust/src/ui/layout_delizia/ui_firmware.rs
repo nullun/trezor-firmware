@@ -450,12 +450,15 @@ impl FirmwareUI for UIDelizia {
         hold: bool,
         _verb: Option<TString<'static>>,
         _external_menu: bool,
+        extra_menu_label: Option<TString<'static>>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
         let paragraphs = PropsList::new(items)?;
 
         let flow = flow::new_confirm_action_simple(
             paragraphs.into_paragraphs(),
-            ConfirmActionExtra::Menu(ConfirmActionMenuStrings::new()),
+            ConfirmActionExtra::Menu(
+                ConfirmActionMenuStrings::new().with_verb_info(extra_menu_label),
+            ),
             ConfirmActionStrings::new(title, subtitle, None, hold.then_some(title)),
             ConfirmActionOptions::new().with_hold(hold),
         )?;
