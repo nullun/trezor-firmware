@@ -36,11 +36,14 @@ async def confirm_group_overview(transactions: list[Transaction]) -> None:
         (TR.algorand__validity_window, f"{max_fv}+{validity_range}", None)
     )
 
-    # One line per transaction
-    for i, tx in enumerate(transactions):
+    # Compact transaction list as a single property
+    lines = []
+    for tx in transactions:
         abbrev = TX_TYPE_ABBREVS.get(tx.tx_type, "???")
-        summary = _group_summary(tx)
-        items.append((f"#{i + 1}", f"{abbrev}  {summary}", None))
+        lines.append(f"{abbrev}  {_group_summary(tx)}")
+    items.append(
+        (f"{len(transactions)} transactions", "\n".join(lines), None)
+    )
 
     await confirm_properties(
         "confirm_group",
