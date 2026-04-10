@@ -20,8 +20,6 @@ if TYPE_CHECKING:
 
 async def confirm_group_overview(transactions: list[Transaction]) -> None:
     """Show a compact summary of all transactions in an atomic group."""
-    from .asa import get_asset_info
-
     items: list[PropertyType] = []
 
     for i, tx in enumerate(transactions):
