@@ -53,7 +53,7 @@ async def _confirm_properties_with_menu(
 
 async def confirm_group_overview(
     transactions: list[Transaction],
-    signer_address: bytes,
+    signer_address: bytes | None,
 ) -> bool:
     """Show a compact summary of all transactions in an atomic group.
 
@@ -78,7 +78,7 @@ async def confirm_group_overview(
     lines = []
     for tx in transactions:
         abbrev = TX_TYPE_ABBREVS.get(tx.tx_type, "???")
-        marker = ">" if tx.sender == signer_address else " "
+        marker = ">" if signer_address is not None and tx.sender == signer_address else " "
         lines.append(f"{marker} {abbrev}  {_group_summary(tx)}")
     items.append(
         (f"{len(transactions)} transactions", "\n".join(lines), None)

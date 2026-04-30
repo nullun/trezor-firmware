@@ -47,9 +47,11 @@ message AlgorandAddress {
 
 /**
  * Request: Ask device to sign Algorand transaction(s)
- * For single transactions: set group_size = 1, group_index = 0.
- * For atomic groups: set group_size = N (2-16), group_index = 0..N-1.
- * The host sends one AlgorandSignTx per transaction in the group.
+ * For single transactions: send one AlgorandSignTx with group_size = 1
+ * and group_index = 0.
+ * For atomic groups: send the first transaction in AlgorandSignTx with
+ * group_size = N (2-16) and group_index = 0; the device will then request
+ * the remaining transactions via AlgorandTxRequest / AlgorandTxAck.
  * @start
  * @next AlgorandTxRequest
  * @next Failure

@@ -30,6 +30,7 @@ async def sign_tx(
     from trezor.crypto.hashlib import sha512_256
     from trezor.messages import AlgorandTxAck, AlgorandTxRequest, AlgorandTxSignature
     from trezor.ui.layouts import show_continue_in_app
+    from trezor.ui.layouts.progress import progress
     from trezor.wire import DataError, context
 
     from trezor import TR
@@ -50,22 +51,11 @@ async def sign_tx(
     node = keychain.derive(address_n)
     signer_public_key = seed.remove_ed25519_prefix(node.public_key())
 
-    # For Ed25519 the signer's address bytes equal the public key.
-    # For FALCON we re-derive the LogicSig contract address (which is the
-    # SHA-512/256 hash of the assembled program) and use that for sender
-    # comparison. The actual FALCON keypair is generated lazily below
-    # only if signing is needed, since keygen is expensive.
-    if sig_type == SIG_FALCON_DET1024:
-        from .falcon_keys import derive_falcon_keypair
-        from .logicsig import derive_falcon_logicsig_address
-
-        falcon_privkey, falcon_pubkey = derive_falcon_keypair(keychain, address_n)
-        signer_address_bytes, _falcon_counter = derive_falcon_logicsig_address(
-            falcon_pubkey
-        )
-    else:
-        falcon_privkey = None
-        signer_address_bytes = signer_public_key
+    falcon_privkey = None
+    falcon_spinner = None
+    signer_address_bytes = (
+        signer_public_key if sig_type == SIG_ED25519 else None
+    )
 
     if group_size < 1 or group_size > 16:
         raise DataError("Invalid group size")
@@ -74,7 +64,6 @@ async def sign_tx(
 
     # Collect all transactions in the group
     transactions: list[Transaction] = []
-    raw_txs: list[bytes] = []
 
     # Parse the first transaction (from AlgorandSignTx)
     tx_bytes = msg.serialized_tx
@@ -83,7 +72,6 @@ async def sign_tx(
     except Exception:
         raise DataError("Invalid transaction")
     transactions.append(transaction)
-    raw_txs.append(tx_bytes)
 
     # If this is a group, request remaining transactions via TxRequest/TxAck
     for i in range(1, group_size):
@@ -97,7 +85,6 @@ async def sign_tx(
         except Exception:
             raise DataError(f"Invalid transaction at index {i}")
         transactions.append(transaction)
-        raw_txs.append(tx_bytes)
 
     # For groups: verify all transactions share the same group ID
     if group_size > 1:
@@ -129,53 +116,91 @@ async def sign_tx(
             raise DataError("Group has no valid submission window")
 
         # Show group overview before individual transactions
-        review_all = await confirm_group_overview(
+        review_all = sig_type == SIG_FALCON_DET1024 or await confirm_group_overview(
             transactions, signer_address_bytes
         )
 
     try:
-        # Verify at least one transaction has sender == signer
-        signer_tx_indices = [
-            i
-            for i, tx in enumerate(transactions)
-            if tx.sender == signer_address_bytes
-        ]
-        if not signer_tx_indices:
-            raise DataError("No transaction in the group matches the signer")
+        signer_tx_indices: list[int] | None = None
+        if sig_type == SIG_ED25519:
+            signer_tx_indices = [
+                i
+                for i, tx in enumerate(transactions)
+                if tx.sender == signer_address_bytes
+            ]
+            if not signer_tx_indices:
+                raise DataError("No transaction in the group matches the signer")
 
         # Show UI confirmation for each transaction.
-        # For groups: by default only show transactions we're signing.
+        # For Ed25519 groups: by default only show transactions we're signing.
         # If the user presses "Review all" (from the context menu), restart
         # the loop and show every transaction in the group.
+        # For FALCON groups we defer key generation until after review, so we
+        # cannot identify signer-owned transactions yet and review all entries.
         if group_size > 1:
-            while True:
-                restart = False
-                visible = [
-                    (i, tx) for i, tx in enumerate(transactions)
-                    if review_all or tx.sender == signer_address_bytes
-                ]
+            if sig_type == SIG_FALCON_DET1024:
+                visible = list(enumerate(transactions))
                 for review_idx, (i, tx) in enumerate(visible):
-                    info_pressed = await confirm_transaction(
+                    await confirm_transaction(
                         tx,
                         group_index=i,
                         group_size=group_size,
                         signature_type=sig_type,
-                        signer_address=signer_address_bytes,
-                        show_review_all=not review_all,
+                        signer_address=None,
                         review_index=review_idx,
                         review_count=len(visible),
                     )
-                    if info_pressed:
-                        review_all = True
-                        restart = True
+            else:
+                while True:
+                    restart = False
+                    visible = [
+                        (i, tx) for i, tx in enumerate(transactions)
+                        if review_all or tx.sender == signer_address_bytes
+                    ]
+                    for review_idx, (i, tx) in enumerate(visible):
+                        info_pressed = await confirm_transaction(
+                            tx,
+                            group_index=i,
+                            group_size=group_size,
+                            signature_type=sig_type,
+                            signer_address=signer_address_bytes,
+                            show_review_all=not review_all,
+                            review_index=review_idx,
+                            review_count=len(visible),
+                        )
+                        if info_pressed:
+                            review_all = True
+                            restart = True
+                            break
+                    if not restart:
                         break
-                if not restart:
-                    break
         else:
             await confirm_transaction(
                 transactions[0],
                 signature_type=sig_type,
             )
+
+        if sig_type == SIG_FALCON_DET1024:
+            from .falcon_keys import derive_falcon_keypair
+            from .logicsig import derive_falcon_logicsig_address
+
+            falcon_spinner = progress(
+                title=TR.progress__signing_transaction,
+                indeterminate=True,
+            )
+            falcon_spinner.start()
+
+            falcon_privkey, falcon_pubkey = derive_falcon_keypair(keychain, address_n)
+            signer_address_bytes, _falcon_counter = derive_falcon_logicsig_address(
+                falcon_pubkey
+            )
+            signer_tx_indices = [
+                i
+                for i, tx in enumerate(transactions)
+                if tx.sender == signer_address_bytes
+            ]
+            if not signer_tx_indices:
+                raise DataError("No transaction in the group matches the signer")
 
         # Sign transactions where sender matches the derived key
         if group_size == 1:
@@ -188,10 +213,14 @@ async def sign_tx(
                 # FALCON LogicSig accounts verify over the 32-byte TxID,
                 # not the raw serialized transaction bytes (the on-chain
                 # `txn TxID` opcode pushes the hash, not the body).
-                txid = sha512_256(b"TX" + raw_txs[0]).digest()
+                txid = sha512_256(b"TX" + transactions[0].serialized_tx).digest()
                 signature = falcon_sign(falcon_privkey, txid)
             else:
-                signature = ed25519.sign(node.private_key(), b"TX" + raw_txs[0])
+                signature = ed25519.sign(
+                    node.private_key(), b"TX" + transactions[0].serialized_tx
+                )
+            if falcon_spinner is not None:
+                falcon_spinner.stop()
             show_continue_in_app(TR.send__transaction_signed)
             return AlgorandTxSignature(
                 signature=signature,
@@ -200,19 +229,21 @@ async def sign_tx(
         else:
             # Group: sign each transaction where we are the sender
             group_signatures: list[bytes] = []
-            for i, (tx, raw_tx) in enumerate(zip(transactions, raw_txs)):
+            for tx in transactions:
                 if tx.sender != signer_address_bytes:
                     group_signatures.append(b"")  # empty = not our transaction
                     continue
                 if sig_type == SIG_FALCON_DET1024:
                     from .falcon_keys import falcon_sign
 
-                    txid = sha512_256(b"TX" + raw_tx).digest()
+                    txid = sha512_256(b"TX" + tx.serialized_tx).digest()
                     sig = falcon_sign(falcon_privkey, txid)
                 else:
-                    sig = ed25519.sign(node.private_key(), b"TX" + raw_tx)
+                    sig = ed25519.sign(node.private_key(), b"TX" + tx.serialized_tx)
                 group_signatures.append(sig)
 
+            if falcon_spinner is not None:
+                falcon_spinner.stop()
             show_continue_in_app(TR.send__transaction_signed)
             return AlgorandTxSignature(
                 signature=group_signatures[signer_tx_indices[0]],
@@ -220,6 +251,8 @@ async def sign_tx(
                 signature_type=sig_type,
             )
     finally:
+        if falcon_spinner is not None:
+            falcon_spinner.stop()
         if falcon_privkey is not None:
             from .falcon_keys import zeroize_privkey
 

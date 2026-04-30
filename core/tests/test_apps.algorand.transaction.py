@@ -1,6 +1,7 @@
 # flake8: noqa: F403,F405
 from common import *  # isort:skip
 
+from apps.algorand.msgpack import msgpack_encode
 from apps.algorand.transaction import Transaction
 from apps.algorand.types import TxType
 
@@ -93,6 +94,42 @@ class TestTransactionParser(unittest.TestCase):
         self.assertIsNone(tx.note)
         self.assertIsNone(tx.rekey)
 
+    def test_trailing_data_raises(self):
+        with self.assertRaises(Exception):
+            Transaction(self._make_canonical_payment() + b"\x00")
+
+    def test_noncanonical_key_order_raises(self):
+        import struct
+
+        parts = [bytes([0x87])]
+        fields = [
+            ("snd", b"\x01" * 32),
+            ("amt", 1000000),
+            ("fee", 1000),
+            ("fv", 1000),
+            ("gh", b"\x03" * 32),
+            ("lv", 2000),
+            ("rcv", b"\x02" * 32),
+            ("type", "pay"),
+        ]
+        for key, val in fields:
+            key_bytes = key.encode("utf-8")
+            parts.append(bytes([0xA0 | len(key_bytes)]) + key_bytes)
+            if isinstance(val, str):
+                val_bytes = val.encode("utf-8")
+                parts.append(bytes([0xA0 | len(val_bytes)]) + val_bytes)
+            elif isinstance(val, bytes):
+                parts.append(bytes([0xC4, len(val)]) + val)
+            else:
+                if val <= 0xFF:
+                    parts.append(bytes([0xCC, val]))
+                elif val <= 0xFFFF:
+                    parts.append(bytes([0xCD]) + struct.pack(">H", val))
+                else:
+                    parts.append(bytes([0xCE]) + struct.pack(">I", val))
+        with self.assertRaises(Exception):
+            Transaction(b"".join(parts))
+
     def test_missing_type_raises(self):
         """Transaction without 'type' field should raise DataError."""
         # fixmap with 1 entry: {"snd": b"\x01"*32}
@@ -130,6 +167,54 @@ class TestTransactionParser(unittest.TestCase):
                 else:
                     parts.append(bytes([0xCD]) + struct.pack(">H", val))
         raw = b"".join(parts)
+        with self.assertRaises(Exception):
+            Transaction(raw)
+
+    def test_negative_fee_raises(self):
+        raw = msgpack_encode(
+            {
+                "amt": 1000,
+                "fee": -1,
+                "fv": 1000,
+                "gh": b"\x03" * 32,
+                "lv": 2000,
+                "rcv": b"\x02" * 32,
+                "snd": b"\x01" * 32,
+                "type": "pay",
+            }
+        )
+        with self.assertRaises(Exception):
+            Transaction(raw)
+
+    def test_invalid_sender_length_raises(self):
+        raw = msgpack_encode(
+            {
+                "amt": 1000,
+                "fee": 1000,
+                "fv": 1000,
+                "gh": b"\x03" * 32,
+                "lv": 2000,
+                "rcv": b"\x02" * 32,
+                "snd": b"\x01" * 31,
+                "type": "pay",
+            }
+        )
+        with self.assertRaises(Exception):
+            Transaction(raw)
+
+    def test_invalid_foreign_app_id_raises(self):
+        raw = msgpack_encode(
+            {
+                "apid": 1,
+                "apfa": [-1],
+                "fee": 1000,
+                "fv": 1000,
+                "gh": b"\x03" * 32,
+                "lv": 2000,
+                "snd": b"\x01" * 32,
+                "type": "appl",
+            }
+        )
         with self.assertRaises(Exception):
             Transaction(raw)
 

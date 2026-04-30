@@ -1,6 +1,6 @@
 from trezor.wire import DataError
 
-from .msgpack import MsgPackDecoder
+from .msgpack import MsgPackDecoder, msgpack_encode
 from .types import TxType, TX_TYPE_STRINGS
 
 
@@ -10,17 +10,23 @@ class Transaction:
     def __init__(self, serialized_tx: bytes) -> None:
         decoder = MsgPackDecoder(serialized_tx)
         raw = decoder.read_map()
+        decoder.ensure_finished()
 
         if not isinstance(raw, dict):
             raise DataError("Invalid transaction")
 
+        canonical = msgpack_encode(raw)
+        if canonical != serialized_tx:
+            raise DataError("Transaction must use canonical MsgPack")
+
         self.raw = raw
+        self.serialized_tx = canonical
         self.tx_type = self._parse_type(raw)
-        self.sender: bytes = self._require_bytes(raw, "snd")
-        self.fee: int = self._parse_int(raw, "fee", 0)
-        self.first_valid: int = self._require_int(raw, "fv")
-        self.last_valid: int = self._require_int(raw, "lv")
-        self.genesis_hash: bytes = self._require_bytes(raw, "gh")
+        self.sender: bytes = self._require_bytes(raw, "snd", expected_len=32)
+        self.fee: int = self._parse_uint(raw, "fee", 0)
+        self.first_valid: int = self._require_uint(raw, "fv")
+        self.last_valid: int = self._require_uint(raw, "lv")
+        self.genesis_hash: bytes = self._require_bytes(raw, "gh", expected_len=32)
         self.genesis_id: str | None = self._parse_str(raw, "gen")
         self.lease: bytes | None = self._parse_optional_bytes(raw, "lx", 32)
         self.group_id: bytes | None = self._parse_optional_bytes(raw, "grp", 32)
@@ -40,25 +46,60 @@ class Transaction:
         return tx_type
 
     @staticmethod
-    def _require_bytes(raw: dict, key: str) -> bytes:
+    def _is_uint(val: object) -> bool:
+        return isinstance(val, int) and not isinstance(val, bool) and val >= 0
+
+    @classmethod
+    def _require_bytes(
+        cls, raw: dict, key: str, expected_len: int | None = None
+    ) -> bytes:
         val = raw.get(key)
         if not isinstance(val, bytes):
             raise DataError(f"Missing required field: {key}")
+        if expected_len is not None and len(val) != expected_len:
+            raise DataError(f"Invalid field: {key}")
+        return val
+
+    @classmethod
+    def _require_uint(cls, raw: dict, key: str) -> int:
+        val = raw.get(key)
+        if val is None:
+            raise DataError(f"Missing required field: {key}")
+        if not cls._is_uint(val):
+            raise DataError(f"Invalid field: {key}")
+        return val
+
+    @classmethod
+    def _parse_uint(cls, raw: dict, key: str, default: int = 0) -> int:
+        val = raw.get(key)
+        if val is None:
+            return default
+        if not cls._is_uint(val):
+            raise DataError(f"Invalid field: {key}")
+        return val
+
+    @classmethod
+    def _parse_optional_uint(cls, raw: dict, key: str) -> int | None:
+        val = raw.get(key)
+        if val is None:
+            return None
+        if not cls._is_uint(val):
+            raise DataError(f"Invalid field: {key}")
         return val
 
     @staticmethod
-    def _require_int(raw: dict, key: str) -> int:
+    def _require_bool(raw: dict, key: str) -> bool:
         val = raw.get(key)
-        if not isinstance(val, int):
+        if not isinstance(val, bool):
             raise DataError(f"Missing required field: {key}")
         return val
 
     @staticmethod
-    def _parse_int(raw: dict, key: str, default: int = 0) -> int:
+    def _parse_bool(raw: dict, key: str, default: bool = False) -> bool:
         val = raw.get(key)
         if val is None:
             return default
-        if not isinstance(val, int):
+        if not isinstance(val, bool):
             raise DataError(f"Invalid field: {key}")
         return val
 
@@ -106,8 +147,8 @@ class Transaction:
 
     def _parse_payment(self, raw: dict) -> dict:
         return {
-            "receiver": self._require_bytes(raw, "rcv"),
-            "amount": self._parse_int(raw, "amt", 0),
+            "receiver": self._require_bytes(raw, "rcv", expected_len=32),
+            "amount": self._parse_uint(raw, "amt", 0),
             "close_to": self._parse_optional_bytes(raw, "close", 32),
         }
 
@@ -116,44 +157,43 @@ class Transaction:
             "vote_pk": self._parse_optional_bytes(raw, "votekey", 32),
             "vrf_pk": self._parse_optional_bytes(raw, "selkey", 32),
             "sprf_pk": self._parse_optional_bytes(raw, "sprfkey", 64),
-            "vote_first": raw.get("votefst"),
-            "vote_last": raw.get("votelst"),
-            "key_dilution": raw.get("votekd"),
-            "nonpart": raw.get("nonpart", False),
+            "vote_first": self._parse_optional_uint(raw, "votefst"),
+            "vote_last": self._parse_optional_uint(raw, "votelst"),
+            "key_dilution": self._parse_optional_uint(raw, "votekd"),
+            "nonpart": self._parse_bool(raw, "nonpart", False),
         }
 
     def _parse_asset_xfer(self, raw: dict) -> dict:
         return {
-            "asset_id": self._require_int(raw, "xaid"),
-            "amount": self._parse_int(raw, "aamt", 0),
-            "receiver": self._require_bytes(raw, "arcv"),
+            "asset_id": self._require_uint(raw, "xaid"),
+            "amount": self._parse_uint(raw, "aamt", 0),
+            "receiver": self._require_bytes(raw, "arcv", expected_len=32),
             "sender": self._parse_optional_bytes(raw, "asnd", 32),
             "close_to": self._parse_optional_bytes(raw, "aclose", 32),
         }
 
     def _parse_asset_freeze(self, raw: dict) -> dict:
-        frozen = raw.get("afrz")
-        if not isinstance(frozen, bool):
-            raise DataError("Missing required field: afrz")
         return {
-            "asset_id": self._require_int(raw, "faid"),
-            "account": self._require_bytes(raw, "fadd"),
-            "frozen": frozen,
+            "asset_id": self._require_uint(raw, "faid"),
+            "account": self._require_bytes(raw, "fadd", expected_len=32),
+            "frozen": self._require_bool(raw, "afrz"),
         }
 
     def _parse_asset_config(self, raw: dict) -> dict:
         result: dict = {
-            "asset_id": self._parse_int(raw, "caid", 0),
+            "asset_id": self._parse_uint(raw, "caid", 0),
         }
         apar = raw.get("apar")
-        if isinstance(apar, dict):
+        if apar is not None:
+            if not isinstance(apar, dict):
+                raise DataError("Invalid field: apar")
             params: dict = {}
             if "t" in apar:
-                params["total"] = apar["t"]
+                params["total"] = self._require_uint(apar, "t")
             if "dc" in apar:
-                params["decimals"] = apar["dc"]
+                params["decimals"] = self._require_uint(apar, "dc")
             if "df" in apar:
-                params["default_frozen"] = apar["df"]
+                params["default_frozen"] = self._require_bool(apar, "df")
             if "un" in apar:
                 un = apar["un"]
                 if not isinstance(un, str) or len(un) > 8:
@@ -175,13 +215,15 @@ class Transaction:
                     raise DataError("Invalid metadata hash")
                 params["metadata_hash"] = am
             if "m" in apar:
-                params["manager"] = self._require_bytes(apar, "m")
+                params["manager"] = self._require_bytes(apar, "m", expected_len=32)
             if "r" in apar:
-                params["reserve"] = self._require_bytes(apar, "r")
+                params["reserve"] = self._require_bytes(apar, "r", expected_len=32)
             if "f" in apar:
-                params["freeze"] = self._require_bytes(apar, "f")
+                params["freeze"] = self._require_bytes(apar, "f", expected_len=32)
             if "c" in apar:
-                params["clawback"] = self._require_bytes(apar, "c")
+                params["clawback"] = self._require_bytes(
+                    apar, "c", expected_len=32
+                )
             result["params"] = params
         return result
 
@@ -189,12 +231,12 @@ class Transaction:
         from .types import OnCompletion
 
         result: dict = {
-            "app_id": self._parse_int(raw, "apid", 0),
+            "app_id": self._parse_uint(raw, "apid", 0),
         }
 
         if "apan" in raw:
             oc = raw["apan"]
-            if not isinstance(oc, int) or oc < 0 or oc > 5:
+            if not self._is_uint(oc) or oc > 5:
                 raise DataError("Invalid OnCompletion value")
             result["on_completion"] = oc
 
@@ -225,6 +267,9 @@ class Transaction:
             apps = raw["apfa"]
             if not isinstance(apps, list) or len(apps) > 8:
                 raise DataError("Invalid foreign apps")
+            for app in apps:
+                if not self._is_uint(app):
+                    raise DataError("Invalid foreign apps")
             result["foreign_apps"] = apps
             result["num_foreign_apps"] = len(apps)
 
@@ -233,6 +278,9 @@ class Transaction:
             assets = raw["apas"]
             if not isinstance(assets, list) or len(assets) > 8:
                 raise DataError("Invalid foreign assets")
+            for asset in assets:
+                if not self._is_uint(asset):
+                    raise DataError("Invalid foreign assets")
             result["foreign_assets"] = assets
             result["num_foreign_assets"] = len(assets)
 
@@ -248,28 +296,38 @@ class Transaction:
             boxes = raw["apbx"]
             if not isinstance(boxes, list) or len(boxes) > 8:
                 raise DataError("Invalid boxes")
-            result["boxes"] = boxes
+            parsed_boxes: list[dict] = []
+            for box in boxes:
+                if not isinstance(box, dict):
+                    raise DataError("Invalid box")
+                app_index = box.get("i")
+                name = box.get("n")
+                if (
+                    len(box) != 2
+                    or not self._is_uint(app_index)
+                    or app_index > 0xFF
+                    or not isinstance(name, bytes)
+                ):
+                    raise DataError("Invalid box")
+                parsed_boxes.append({"i": app_index, "n": name})
+            result["boxes"] = parsed_boxes
 
         # State schemas
         if "apls" in raw:
             schema = raw["apls"]
-            if isinstance(schema, dict):
-                result["local_schema"] = {
-                    "num_uint": schema.get("nui", 0),
-                    "num_byteslice": schema.get("nbs", 0),
-                }
+            if not isinstance(schema, dict):
+                raise DataError("Invalid local schema")
+            result["local_schema"] = self._parse_state_schema(schema)
         if "apgs" in raw:
             schema = raw["apgs"]
-            if isinstance(schema, dict):
-                result["global_schema"] = {
-                    "num_uint": schema.get("nui", 0),
-                    "num_byteslice": schema.get("nbs", 0),
-                }
+            if not isinstance(schema, dict):
+                raise DataError("Invalid global schema")
+            result["global_schema"] = self._parse_state_schema(schema)
 
         # Extra pages
         if "apep" in raw:
             ep = raw["apep"]
-            if not isinstance(ep, int) or ep > 3:
+            if not self._is_uint(ep) or ep > 3:
                 raise DataError("Invalid extra pages")
             result["extra_pages"] = ep
 
@@ -281,13 +339,40 @@ class Transaction:
 
         # Reject version
         if "aprv" in raw:
-            result["reject_version"] = raw["aprv"]
+            result["reject_version"] = self._require_uint(raw, "aprv")
 
         # Access list
         if "al" in raw:
             al = raw["al"]
             if not isinstance(al, list) or len(al) > 16:
                 raise DataError("Invalid access list")
+            self._validate_access_list(al)
             result["access_list"] = al
 
         return result
+
+    @classmethod
+    def _parse_state_schema(cls, schema: dict) -> dict:
+        return {
+            "num_uint": cls._parse_uint(schema, "nui", 0),
+            "num_byteslice": cls._parse_uint(schema, "nbs", 0),
+        }
+
+    @classmethod
+    def _validate_access_list(cls, access_list: list) -> None:
+        for entry in access_list:
+            if not isinstance(entry, dict):
+                raise DataError("Invalid access list")
+            keys = [key for key in ("d", "p", "s", "h", "l", "b") if key in entry]
+            if len(keys) != 1:
+                raise DataError("Invalid access list")
+            key = keys[0]
+            value = entry[key]
+            if key == "d":
+                if not isinstance(value, bytes) or len(value) != 32:
+                    raise DataError("Invalid access list")
+            elif key in ("p", "s"):
+                if not cls._is_uint(value):
+                    raise DataError("Invalid access list")
+            elif not isinstance(value, dict):
+                raise DataError("Invalid access list")

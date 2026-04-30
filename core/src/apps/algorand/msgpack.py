@@ -1,3 +1,5 @@
+from typing import Any
+
 from trezor.wire import DataError
 
 
@@ -50,6 +52,8 @@ class MsgPackDecoder:
             key = self.read_value()
             if not isinstance(key, str):
                 raise DataError("MsgPack: map key must be string")
+            if key in result:
+                raise DataError("MsgPack: duplicate map key")
             value = self.read_value()
             result[key] = value
         return result
@@ -146,10 +150,16 @@ class MsgPackDecoder:
 
     def read_map(self) -> dict:
         """Read a MsgPack map. Returns dict with string keys."""
+        if self.offset >= len(self.data):
+            raise DataError("MsgPack: expected map")
         byte = self.data[self.offset]
         if 0x80 <= byte <= 0x8F or byte == 0xDE:
             return self.read_value()  # type: ignore [return-value]
         raise DataError("MsgPack: expected map")
+
+    def ensure_finished(self) -> None:
+        if self.offset != len(self.data):
+            raise DataError("MsgPack: trailing data")
 
 
 class MsgPackEncoder:

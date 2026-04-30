@@ -143,6 +143,11 @@ class TestMsgPackDecoder(unittest.TestCase):
         with self.assertRaises(Exception):
             d.read_value()
 
+    def test_duplicate_map_key_raises(self):
+        d = MsgPackDecoder(bytes([0x82, 0xA1]) + b"a" + bytes([0x01, 0xA1]) + b"a" + bytes([0x02]))
+        with self.assertRaises(Exception):
+            d.read_value()
+
     def test_canonical_algorand_payment(self):
         """Test decoding a minimal canonical Algorand payment transaction.
 
