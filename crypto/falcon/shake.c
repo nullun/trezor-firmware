@@ -35,7 +35,7 @@
 
 #if FALCON_ASM_CORTEXM4  // yyyASM_CORTEXM4+1
 
-__attribute__((naked))
+__attribute__((naked, no_stack_protector))
 static void
 process_block(uint64_t *A __attribute__((unused)))
 {

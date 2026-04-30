@@ -80,7 +80,7 @@
 
 #if FALCON_ASM_CORTEXM4 // yyyASM_CORTEXM4+1
 
-__attribute__((naked))
+__attribute__((naked, no_stack_protector))
 fpr
 fpr_scaled(int64_t i __attribute__((unused)), int sc __attribute__((unused)))
 {
@@ -270,7 +270,7 @@ print_regs(uint32_t *rr, uint32_t flags)
 	printf("\n");
 }
 
-__attribute__((naked))
+__attribute__((naked, no_stack_protector))
 void
 DEBUG(void)
 {
@@ -285,7 +285,7 @@ DEBUG(void)
 #endif
 // yyyPQCLEAN-
 
-__attribute__((naked))
+__attribute__((naked, no_stack_protector))
 fpr
 fpr_add(fpr x __attribute__((unused)), fpr y __attribute__((unused)))
 {
@@ -582,7 +582,7 @@ fpr_add(fpr x, fpr y)
 
 #if FALCON_ASM_CORTEXM4 // yyyASM_CORTEXM4+1
 
-__attribute__((naked))
+__attribute__((naked, no_stack_protector))
 fpr
 fpr_mul(fpr x __attribute__((unused)), fpr y __attribute__((unused)))
 {
@@ -802,7 +802,7 @@ fpr_mul(fpr x, fpr y)
 
 #if FALCON_ASM_CORTEXM4 // yyyASM_CORTEXM4+1
 
-__attribute__((naked))
+__attribute__((naked, no_stack_protector))
 fpr
 fpr_div(fpr x __attribute__((unused)), fpr y __attribute__((unused)))
 {
@@ -1028,7 +1028,7 @@ fpr_div(fpr x, fpr y)
 
 #if FALCON_ASM_CORTEXM4 // yyyASM_CORTEXM4+1
 
-__attribute__((naked))
+__attribute__((naked, no_stack_protector))
 fpr
 fpr_sqrt(fpr x __attribute__((unused)))
 {

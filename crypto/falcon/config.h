@@ -139,13 +139,24 @@
  */
 
 /*
- * Explicitly disable the specialized assembly code for ARM Cortex-M4.
+ * Enable the specialized assembly code on ARM Cortex-M targets that
+ * support the required Thumb-2 instructions (umull/umlal/clz/bfc/...).
+ * The asm path is constant-time and substantially faster than the
+ * plain-C FP emulation; enabling it on M4 (ARMv7E-M) and M33
+ * (ARMv8-M Mainline) brings keygen/sign times down materially.
  *
- * While we are not aware of any way that the assembly code could lead
- * to non-determinism, caution should be exercised if it is ever under
- * consideration for usage. (At minimum, check KATs.)
+ * On non-ARM hosts (the Unix emulator, native test harness) the asm
+ * is left disabled so the inline ARM mnemonics never reach the
+ * assembler.  Determinism across the host build and the on-device
+ * build is sanity-checked via the FALCON-DET1024 KAT vector emitted
+ * by tests/test_falcon_kat.
  */
+#if (defined __ARM_ARCH_7EM__ && __ARM_ARCH_7EM__) \
+	|| (defined __ARM_ARCH_8M_MAIN__ && __ARM_ARCH_8M_MAIN__)
+#define FALCON_ASM_CORTEXM4  1
+#else
 #define FALCON_ASM_CORTEXM4  0
+#endif
 
 
 /*

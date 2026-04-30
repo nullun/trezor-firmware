@@ -5,5 +5,6 @@
 tests/aestst
 tests/libtrezor-crypto.so
 tests/test_check
+tests/test_falcon_kat
 tests/test_openssl
 tests/test_speed

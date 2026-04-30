@@ -136,6 +136,12 @@ SRCS  += hash_to_curve.c
 SRCS  += buffer.c der.c
 SRCS  += elligator2.c
 
+# FALCON-DET1024 sources (used only by tests/test_falcon_kat).
+FALCON_SRCS  = falcon/falcon.c falcon/deterministic.c falcon/fpr.c
+FALCON_SRCS += falcon/fft.c falcon/sign.c falcon/vrfy.c falcon/keygen.c
+FALCON_SRCS += falcon/shake.c falcon/codec.c falcon/common.c falcon/rng.c
+FALCON_OBJS  = $(FALCON_SRCS:.c=.o)
+
 OBJS   = $(SRCS:.c=.o)
 OBJS  += secp256k1-zkp.o
 OBJS  += precomputed_ecmult.o
@@ -149,7 +155,14 @@ all: tools tests
 %.o: %.c %.h options.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-tests: tests/test_check tests/test_openssl tests/test_speed tests/libtrezor-crypto.so tests/aestst
+tests: tests/test_check tests/test_openssl tests/test_speed tests/libtrezor-crypto.so tests/aestst tests/test_falcon_kat
+
+# Falcon objects need access to falcon/ headers from inside falcon/.
+$(FALCON_OBJS): %.o: %.c
+	$(CC) $(CFLAGS) -Icrypto/falcon -o $@ -c $<
+
+tests/test_falcon_kat: tests/test_falcon_kat.o $(FALCON_OBJS) sha2.o memzero.o
+	$(CC) $(CFLAGS) tests/test_falcon_kat.o $(FALCON_OBJS) sha2.o memzero.o -o tests/test_falcon_kat
 
 tests/aestst: aes/aestst.o aes/aescrypt.o aes/aeskey.o aes/aestab.o
 	$(CC) $(CFLAGS) $^ -o $@
@@ -192,8 +205,8 @@ secp256k1-zkp.o:
 	$(CC) $(CFLAGS) -Wno-unused-function $(ZKP_CFLAGS) -fPIC -I$(ZKP_PATH) -I$(ZKP_PATH)/src -c $(ZKP_PATH)/src/secp256k1.c -o secp256k1-zkp.o
 
 clean:
-	rm -f *.o aes/*.o chacha20poly1305/*.o ed25519-donna/*.o monero/*.o
-	rm -f tests/*.o tests/test_check tests/test_speed tests/test_openssl tests/libtrezor-crypto.so tests/aestst
+	rm -f *.o aes/*.o chacha20poly1305/*.o ed25519-donna/*.o monero/*.o falcon/*.o
+	rm -f tests/*.o tests/test_check tests/test_speed tests/test_openssl tests/libtrezor-crypto.so tests/aestst tests/test_falcon_kat
 	rm -f tools/*.o tools/xpubaddrgen tools/mktable tools/bip39bruteforce
 	rm -f fuzzer/*.o fuzzer/fuzzer
 	rm -f secp256k1-zkp.o precomputed_ecmult.o precomputed_ecmult_gen.o
