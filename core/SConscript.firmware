@@ -215,17 +215,23 @@ if EVERYTHING:
         # FALCON-DET1024 (post-quantum signing for Algorand)
         'vendor/trezor-crypto/falcon/falcon.c',
         'vendor/trezor-crypto/falcon/deterministic.c',
-        'vendor/trezor-crypto/falcon/fpr.c',
         'vendor/trezor-crypto/falcon/fft.c',
         'vendor/trezor-crypto/falcon/sign.c',
         'vendor/trezor-crypto/falcon/vrfy.c',
         'vendor/trezor-crypto/falcon/keygen.c',
-        'vendor/trezor-crypto/falcon/shake.c',
         'vendor/trezor-crypto/falcon/codec.c',
         'vendor/trezor-crypto/falcon/common.c',
         'vendor/trezor-crypto/falcon/rng.c',
     ]
-    CPPDEFINES_MOD += ['USE_FALCON=1']
+    # fpr.c and shake.c use __attribute__((naked)) Cortex-M asm trampolines;
+    # the global -fstack-protector-all would inject a canary prologue that
+    # breaks the hand-rolled register/stack contract. Build them separately
+    # with stack protection disabled.
+    SOURCE_MOD_CRYPTO_FALCON_ASM = [
+        'vendor/trezor-crypto/falcon/fpr.c',
+        'vendor/trezor-crypto/falcon/shake.c',
+    ]
+    CPPDEFINES_MOD += ['USE_FALCON=1', ('FALCON_ASM_CORTEXM4', '1')]
 
 # libsecp256k1-zkp
 if FEATURE_FLAGS["SECP256K1_ZKP"]:
@@ -900,6 +906,9 @@ source_files = SOURCE_MOD + SOURCE_MOD_CRYPTO + SOURCE_FIRMWARE + SOURCE_MICROPY
 obj_program = []
 obj_program.extend(env.Object(source=SOURCE_MOD))
 obj_program.extend(env.Object(source=SOURCE_MOD_CRYPTO, CCFLAGS='$CCFLAGS -ftrivial-auto-var-init=zero -ffreestanding'))
+if EVERYTHING:
+    obj_program.extend(env.Object(source=SOURCE_MOD_CRYPTO_FALCON_ASM, CCFLAGS='$CCFLAGS -ftrivial-auto-var-init=zero -ffreestanding -fno-stack-protector'))
+    source_files.extend(SOURCE_MOD_CRYPTO_FALCON_ASM)
 if FEATURE_FLAGS["SECP256K1_ZKP"]:
     obj_program.extend(env.Object(source=SOURCE_MOD_SECP256K1_ZKP, CCFLAGS='$CCFLAGS -Wno-unused-function -ffreestanding'))
     source_files.extend(SOURCE_MOD_SECP256K1_ZKP)
