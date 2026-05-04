@@ -139,14 +139,9 @@ def sign_tx(
 @click.option("-d", "--show-display", is_flag=True)
 @click.option("-C", "--chunkify", is_flag=True)
 @click.option(
-    "--pubkey",
-    is_flag=True,
-    help="Also print the raw FALCON public key (base64).",
-)
-@click.option(
     "--verbose",
     is_flag=True,
-    help="Print all metadata (counter, TEAL version).",
+    help="Print full metadata (TEAL version, counter, public key).",
 )
 @with_session
 def get_falcon_address(
@@ -154,7 +149,6 @@ def get_falcon_address(
     address: str,
     show_display: bool,
     chunkify: bool,
-    pubkey: bool,
     verbose: bool,
 ) -> str:
     """Get the FALCON-DET1024 (post-quantum) Algorand address."""
@@ -166,11 +160,10 @@ def get_falcon_address(
     )
 
     lines = [info.address]
-    if pubkey:
-        lines.append("Public key: " + _b64.b64encode(info.public_key).decode())
     if verbose:
-        lines.append(f"Counter: {info.counter}")
         lines.append(f"TEAL version: {info.teal_version}")
+        lines.append(f"Counter: {info.counter}")
+        lines.append("Public key: " + _b64.b64encode(info.public_key).decode())
     return "\n".join(lines)
 
 
