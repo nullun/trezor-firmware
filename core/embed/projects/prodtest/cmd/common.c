@@ -33,7 +33,10 @@
 #include "sha2.h"
 #include "string.h"
 
-#include <../vendor/mldsa-native/mldsa/sign.h>
+#ifdef USE_MCU_ATTESTATION
+#include <mldsa_native.h>
+#include <sec/mcu_attestation.h>
+#endif
 
 // HSM root certification authority public keys.
 const uint8_t ROOT_KEYS_P256[][ECDSA_PUBLIC_KEY_SIZE] = {
@@ -72,7 +75,8 @@ const ed25519_public_key ROOT_KEYS_ED25519[] = {
 #endif
 };
 
-const uint8_t ROOT_KEYS_MLDSA44[][CRYPTO_PUBLICKEYBYTES] = {
+#ifdef USE_MCU_ATTESTATION
+const uint8_t ROOT_KEYS_MLDSA44[][MCU_ATTESTATION_PUBKEY_SIZE] = {
 #if PRODUCTION
 #ifdef DEV_AUTH_ROOT_PROD_MLDSA44
     DEV_AUTH_ROOT_PROD_MLDSA44,
@@ -89,6 +93,7 @@ const uint8_t ROOT_KEYS_MLDSA44[][CRYPTO_PUBLICKEYBYTES] = {
 #endif
 #endif
 };
+#endif  // USE_MCU_ATTESTATION
 
 // Identifier of context-specific constructed tag 3, which is used for
 // extensions in X.509.
@@ -345,18 +350,20 @@ static bool verify_signature(alg_id_t alg_id, const uint8_t* pub_key,
     return true;
   }
 
+#ifdef USE_MCU_ATTESTATION
   if (alg_id == ALG_ID_MLDSA44) {
-    if (pub_key_size != CRYPTO_PUBLICKEYBYTES) {
+    if (pub_key_size != MCU_ATTESTATION_PUBKEY_SIZE) {
       return false;
     }
 
-    if (crypto_sign_verify(sig, sig_size, msg, msg_size, (const uint8_t*)"", 0,
-                           pub_key) != 0) {
+    if (mldsa_verify(sig, sig_size, msg, msg_size, (const uint8_t*)"", 0,
+                     pub_key) != 0) {
       return false;
     }
 
     return true;
   }
+#endif  // USE_MCU_ATTESTATION
 
   return false;
 }
@@ -378,11 +385,13 @@ static bool get_root_public_key(
       root_key_count = sizeof(ROOT_KEYS_ED25519) / sizeof(ROOT_KEYS_ED25519[0]);
       root_key_size = sizeof(ROOT_KEYS_ED25519[0]);
       break;
+#ifdef USE_MCU_ATTESTATION
     case ALG_ID_MLDSA44:
       root_keys = (const uint8_t*)ROOT_KEYS_MLDSA44;
       root_key_count = sizeof(ROOT_KEYS_MLDSA44) / sizeof(ROOT_KEYS_MLDSA44[0]);
       root_key_size = sizeof(ROOT_KEYS_MLDSA44[0]);
       break;
+#endif  // USE_MCU_ATTESTATION
     default:
       return false;
   }

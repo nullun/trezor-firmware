@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Awaitable
 
 import trezorui_api
 from trezor.enums import ButtonRequestType
+from trezor.ui import Layout
 from trezor.ui.layouts.common import interact
 from trezor.wire import ActionCancelled
 
@@ -40,18 +41,20 @@ class Menu:
 
 
 class Details:
-    def __init__(self, name: str, factory: Callable[[], Awaitable[T]]) -> None:
+    def __init__(self, name: str, interact: Callable[[], Awaitable[T]]) -> None:
         self.name = name
-        self.factory = factory
+        self._interact = interact
 
     @classmethod
     def from_layout(
         cls, name: str, layout_factory: Callable[[], trezorui_api.LayoutObj[T]]
     ) -> Self:
-        return cls(
-            name,
-            lambda: interact(layout_factory(), br_name=None, raise_on_cancel=None),
-        )
+        async def _interact() -> T:
+            with layout_factory() as obj:
+                # details' layout is de-allocated after interact() returns.
+                return await interact(obj, br_name=None, raise_on_cancel=None)
+
+        return cls(name, _interact)
 
 
 class Cancel(Details):
@@ -70,15 +73,16 @@ async def show_menu(
             menu = menu.children[i]
 
         if isinstance(menu, Menu):
-            layout = trezorui_api.select_menu(
+            with trezorui_api.select_menu(
                 items=[child.name for child in menu.children],
                 current=current_item,
                 cancel=menu.cancel and menu.cancel.name,
-            )
-            choice = await interact(layout, br_name=None, raise_on_cancel=None)
+            ) as layout:
+                choice = await interact(layout, br_name=None, raise_on_cancel=None)
+
             if choice is trezorui_api.CANCELLED:
                 if menu.cancel:
-                    result = await menu.cancel.factory()
+                    result = await menu.cancel._interact()
                     assert result in (trezorui_api.CONFIRMED, trezorui_api.CANCELLED)
                     if result is trezorui_api.CONFIRMED:
                         # cancellation is confirmed - raise an exception
@@ -93,7 +97,7 @@ async def show_menu(
         else:
             assert isinstance(menu, Details)
             # Details' layout is created on-demand (saving memory)
-            await menu.factory()  # the result is ignored
+            await menu._interact()  # the result is ignored
 
         # go one level up, or exit the menu
         if menu_path:
@@ -108,9 +112,13 @@ async def interact_with_menu(
     br_name: str | None,
     br_code: ButtonRequestType = ButtonRequestType.Other,
     raise_on_cancel: ExceptionType = ActionCancelled,
+    *,
+    layout_type: type[Layout] = Layout,
 ) -> T:
     while True:
-        result = await interact(main, br_name, br_code, raise_on_cancel)
+        result = await interact(
+            main, br_name, br_code, raise_on_cancel, layout_type=layout_type
+        )
         br_name = None  # ButtonRequest should be sent once (for the main layout)
         if result is trezorui_api.INFO:
             await show_menu(menu, raise_on_cancel)
@@ -124,12 +132,16 @@ async def confirm_with_menu(
     br_name: str | None,
     br_code: ButtonRequestType = ButtonRequestType.Other,
     raise_on_cancel: ExceptionType = ActionCancelled,
+    *,
+    layout_type: type[Layout] = Layout,
 ) -> None:
     """
     Make sure the layout result is CONFIRMED (or raises an exception).
 
     In order to handle other results (such as BACK), use `interact_with_menu`.
     """
-    result = await interact_with_menu(main, menu, br_name, br_code, raise_on_cancel)
+    result = await interact_with_menu(
+        main, menu, br_name, br_code, raise_on_cancel, layout_type=layout_type
+    )
     # use this function when the layout may only return CONFIRMED on success (or raise an exception)
     assert result is trezorui_api.CONFIRMED

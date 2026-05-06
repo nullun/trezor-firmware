@@ -1,13 +1,12 @@
 ENTRY(reset_handler)
 
 MEMORY {
-  FLASH  (rx)  : ORIGIN = FIRMWARE_START, LENGTH = FIRMWARE_MAXSIZE
-
-  MAIN_RAM (wal) : ORIGIN = MAIN_RAM_START, LENGTH = MAIN_RAM_SIZE
-  AUX1_RAM (wal) : ORIGIN = AUX1_RAM_START, LENGTH = AUX1_RAM_SIZE
-  BOOT_ARGS (wal) : ORIGIN = BOOTARGS_START, LENGTH = BOOTARGS_SIZE
-  FB1_RAM (wal) : ORIGIN = FB1_RAM_START, LENGTH = FB1_RAM_SIZE
-  FB2_RAM (wal) : ORIGIN = FB2_RAM_START, LENGTH = FB2_RAM_SIZE
+  FLASH  (rx)    : ORIGIN = FIRMWARE_START, LENGTH = FIRMWARE_MAXSIZE
+  MAIN_RAM (rw)  : ORIGIN = MAIN_RAM_START, LENGTH = MAIN_RAM_SIZE
+  AUX1_RAM (rw)  : ORIGIN = AUX1_RAM_START, LENGTH = AUX1_RAM_SIZE
+  BOOT_ARGS (rw) : ORIGIN = BOOTARGS_START, LENGTH = BOOTARGS_SIZE
+  FB1_RAM (rw)   : ORIGIN = FB1_RAM_START, LENGTH = FB1_RAM_SIZE
+  FB2_RAM (rw)   : ORIGIN = FB2_RAM_START, LENGTH = FB2_RAM_SIZE
 }
 
 _stack_section_start = ADDR(.stack);
@@ -23,8 +22,8 @@ _bss_section_end = ADDR(.bss) + SIZEOF(.bss);
 _bootargs_ram_start = BOOTARGS_START;
 _bootargs_ram_end = BOOTARGS_START + BOOTARGS_SIZE;
 
-_codelen = SIZEOF(.secmon_header) + SIZEOF(.padding) + SIZEOF(.flash) + SIZEOF(.data);
-_secmon_codelen = SIZEOF(.padding) + SIZEOF(.flash) + SIZEOF(.data);
+_codelen = _image_flash_end - ADDR(.secmon_header);
+_secmon_codelen = _image_flash_end - ADDR(.padding);
 
 SECTIONS {
   .vendorheader : ALIGN(4) {
@@ -65,7 +64,7 @@ SECTIONS {
   } >FLASH AT>FLASH
 
   .stack : ALIGN(8) {
-    . = 128K; /* Overflow causes UsageFault */
+    . += 128K; /* Overflow causes UsageFault */
   } >AUX1_RAM
 
   .data : ALIGN(4) {
@@ -76,6 +75,9 @@ SECTIONS {
   /DISCARD/ : {
     *(.ARM.exidx*);
   }
+
+  /* End of code/data in FLASH */
+  _image_flash_end = LOADADDR(.data) + SIZEOF(.data);
 
   .bss : ALIGN(4) {
     *(.no_dma_buffers*);

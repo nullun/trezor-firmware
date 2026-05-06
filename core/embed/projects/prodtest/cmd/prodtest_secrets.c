@@ -27,6 +27,10 @@
 #include <sec/rng_strong.h>
 #include <sec/secret.h>
 #include <sec/secret_keys.h>
+#ifdef USE_MCU_ATTESTATION
+#include <mldsa_native.h>
+#include <sec/mcu_attestation.h>
+#endif
 
 #include "common.h"
 #include "memzero.h"
@@ -47,8 +51,6 @@
 #ifndef TREZOR_EMULATOR
 #include <trezor_model.h>
 #endif
-
-#include <../vendor/mldsa-native/mldsa/sign.h>
 
 secbool set_random_secret(uint8_t slot, size_t length) {
   uint8_t secret[length];
@@ -169,7 +171,7 @@ static void prodtest_secrets_init(cli_t* cli) {
   cli_ok(cli, "");
 }
 
-#ifdef SECRET_MASTER_KEY_SLOT_SIZE
+#ifdef USE_MCU_ATTESTATION
 static void prodtest_secrets_get_mcu_device_key(cli_t* cli) {
   if (cli_arg_count(cli) > 0) {
     cli_error_arg_count(cli);
@@ -182,10 +184,10 @@ static void prodtest_secrets_get_mcu_device_key(cli_t* cli) {
     goto cleanup;
   }
 
-  uint8_t mcu_public[CRYPTO_PUBLICKEYBYTES] = {0};
-  uint8_t mcu_private[CRYPTO_SECRETKEYBYTES] = {0};
-  if (crypto_sign_keypair_internal(mcu_public, mcu_private, seed) != 0) {
-    cli_error(cli, CLI_ERROR, "`crypto_sign_keypair_internal()` failed.");
+  uint8_t mcu_public[MCU_ATTESTATION_PUBKEY_SIZE] = {0};
+  uint8_t mcu_private[MCU_ATTESTATION_PRIVKEY_SIZE] = {0};
+  if (mldsa_keypair_internal(mcu_public, mcu_private, seed) != 0) {
+    cli_error(cli, CLI_ERROR, "`mldsa_keypair_internal()` failed.");
     goto cleanup;
   }
 
@@ -215,10 +217,10 @@ static bool check_device_cert_chain(cli_t* cli, const uint8_t* chain,
     goto cleanup;
   }
 
-  uint8_t mcu_public[CRYPTO_PUBLICKEYBYTES] = {0};
-  uint8_t mcu_private[CRYPTO_SECRETKEYBYTES] = {0};
-  if (crypto_sign_keypair_internal(mcu_public, mcu_private, seed) != 0) {
-    cli_error(cli, CLI_ERROR, "`crypto_sign_keypair_internal()` failed.");
+  uint8_t mcu_public[MCU_ATTESTATION_PUBKEY_SIZE] = {0};
+  uint8_t mcu_private[MCU_ATTESTATION_PRIVKEY_SIZE] = {0};
+  if (mldsa_keypair_internal(mcu_public, mcu_private, seed) != 0) {
+    cli_error(cli, CLI_ERROR, "`mldsa_keypair_internal()` failed.");
     goto cleanup;
   }
 
@@ -228,13 +230,13 @@ static bool check_device_cert_chain(cli_t* cli, const uint8_t* chain,
   // The challenge is intentionally constant zero.
   const uint8_t ENCODED_EMPTY_CONTEXT_STRING[] = {0, 0};
   uint8_t challenge[CHALLENGE_SIZE] = {0};
-  uint8_t signature[CRYPTO_BYTES] = {0};
+  uint8_t signature[MCU_ATTESTATION_SIG_SIZE] = {0};
   size_t siglen = 0;
-  if (crypto_sign_signature_internal(
-          signature, &siglen, challenge, sizeof(challenge),
-          ENCODED_EMPTY_CONTEXT_STRING, sizeof(ENCODED_EMPTY_CONTEXT_STRING),
-          rnd, mcu_private, 0) != 0) {
-    cli_error(cli, CLI_ERROR, "`crypto_sign_signature()` failed.");
+  if (mldsa_signature_internal(signature, &siglen, challenge, sizeof(challenge),
+                               ENCODED_EMPTY_CONTEXT_STRING,
+                               sizeof(ENCODED_EMPTY_CONTEXT_STRING), rnd,
+                               mcu_private, 0) != 0) {
+    cli_error(cli, CLI_ERROR, "`mldsa_signature_internal()` failed.");
     goto cleanup;
   }
 
@@ -251,7 +253,7 @@ cleanup:
   memzero(rnd, sizeof(rnd));
   return ret;
 }
-#endif
+#endif  // TREZOR_EMULATOR
 
 static void prodtest_secrets_certdev_write(cli_t* cli) {
   if (cli_arg_count(cli) != 1) {
@@ -262,39 +264,31 @@ static void prodtest_secrets_certdev_write(cli_t* cli) {
 #ifdef TREZOR_EMULATOR
   cli_error(cli, CLI_ERROR, "Not implemented");
 #else
-  const size_t prefix_length = 2;
   size_t certificate_length = 0;
-  uint8_t prefixed_certificate[SECRET_MCU_DEVICE_CERT_SIZE] = {0};
-  if (!cli_arg_hex(cli, "hex-data", prefixed_certificate + prefix_length,
-                   sizeof(prefixed_certificate) - prefix_length,
+  uint8_t certificate[MCU_ATTESTATION_MAX_CERT_SIZE] = {0};
+  if (!cli_arg_hex(cli, "hex-data", certificate, sizeof(certificate),
                    &certificate_length)) {
-    if (certificate_length == sizeof(prefixed_certificate) - prefix_length) {
+    if (certificate_length == sizeof(certificate)) {
       cli_error(cli, CLI_ERROR, "Certificate too long.");
     } else {
       cli_error(cli, CLI_ERROR, "Hexadecimal decoding error.");
     }
     return;
   }
-  prefixed_certificate[0] = (certificate_length >> 8) & 0xFF;
-  prefixed_certificate[1] = certificate_length & 0xFF;
 
-  if (!check_device_cert_chain(cli, &prefixed_certificate[prefix_length],
-                               certificate_length)) {
+  if (!check_device_cert_chain(cli, certificate, certificate_length)) {
     // Error returned by check_device_cert_chain().
     return;
   }
 
-  secbool result =
-      secret_write(prefixed_certificate, SECRET_MCU_DEVICE_CERT_OFFSET,
-                   sizeof(prefixed_certificate));
-
-  if (sectrue != result) {
-    cli_error(cli, CLI_ERROR, "secret_write() failed.");
+  if (secret_mcu_device_cert_write(certificate, certificate_length) !=
+      sectrue) {
+    cli_error(cli, CLI_ERROR, "secret_mcu_device_cert_write() failed.");
     return;
   }
 
   cli_ok(cli, "");
-#endif
+#endif  // TREZOR_EMULATOR
 }
 
 static void prodtest_secrets_certdev_read(cli_t* cli) {
@@ -306,26 +300,19 @@ static void prodtest_secrets_certdev_read(cli_t* cli) {
 #ifdef TREZOR_EMULATOR
   cli_error(cli, CLI_ERROR, "Not implemented");
 #else
-  const size_t prefix_length = 2;
-  uint8_t prefixed_certificate[SECRET_MCU_DEVICE_CERT_SIZE] = {0};
+  uint8_t certificate[MCU_ATTESTATION_MAX_CERT_SIZE] = {0};
+  size_t certificate_length = 0;
 
-  if (secret_read(prefixed_certificate, SECRET_MCU_DEVICE_CERT_OFFSET,
-                  sizeof(prefixed_certificate)) != sectrue) {
-    cli_error(cli, CLI_ERROR, "`secret_read()` failed.");
+  if (secret_mcu_device_cert_read(certificate, sizeof(certificate),
+                                  &certificate_length) != sectrue) {
+    cli_error(cli, CLI_ERROR, "secret_mcu_device_cert_read() failed.");
     return;
   }
 
-  size_t certificate_length =
-      prefixed_certificate[0] << 8 | prefixed_certificate[1];
-
-  if (certificate_length > sizeof(prefixed_certificate) - prefix_length) {
-    cli_error(cli, CLI_ERROR, "Invalid certificate data.");
-    return;
-  }
-  cli_ok_hexdata(cli, prefixed_certificate + prefix_length, certificate_length);
-#endif
+  cli_ok_hexdata(cli, certificate, certificate_length);
+#endif  // TREZOR_EMULATOR
 }
-#endif
+#endif  // USE_MCU_ATTESTATION
 
 #ifdef SECRET_LOCK_SLOT_OFFSET
 static void prodtest_secrets_lock(cli_t* cli) {
@@ -372,7 +359,7 @@ PRODTEST_CLI_CMD(
   .args = ""
 );
 
-#ifdef SECRET_MASTER_KEY_SLOT_SIZE
+#ifdef USE_MCU_ATTESTATION
 PRODTEST_CLI_CMD(
   .name = "secrets-get-mcu-device-key",
   .func = prodtest_secrets_get_mcu_device_key,
@@ -393,7 +380,7 @@ PRODTEST_CLI_CMD(
   .info = "Read the device's X.509 certificate from flash",
   .args = ""
 );
-#endif
+#endif  // USE_MCU_ATTESTATION
 
 #ifdef SECRET_LOCK_SLOT_OFFSET
 PRODTEST_CLI_CMD(

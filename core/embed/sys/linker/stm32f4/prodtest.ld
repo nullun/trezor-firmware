@@ -2,11 +2,11 @@ ENTRY(reset_handler)
 
 MEMORY {
   FLASH  (rx)     : ORIGIN = FIRMWARE_P1_START, LENGTH = FIRMWARE_P1_MAXSIZE
-  MAIN_STACK (wal)  : ORIGIN = S_MAIN_STACK_START, LENGTH = S_MAIN_STACK_SIZE
-  MAIN_RAM (wal)  : ORIGIN = S_MAIN_RAM_START, LENGTH = S_MAIN_RAM_SIZE
-  FB1 (wal)       : ORIGIN = S_FB1_RAM_START, LENGTH = S_FB1_RAM_SIZE
-  BOOT_ARGS (wal) : ORIGIN = BOOTARGS_START, LENGTH = BOOTARGS_SIZE
-  AUX1_RAM   (wal) : ORIGIN = AUX1_RAM_START, LENGTH = AUX1_RAM_SIZE
+  MAIN_STACK (rw) : ORIGIN = S_MAIN_STACK_START, LENGTH = S_MAIN_STACK_SIZE
+  MAIN_RAM (rw)   : ORIGIN = S_MAIN_RAM_START, LENGTH = S_MAIN_RAM_SIZE
+  FB1 (rw)        : ORIGIN = S_FB1_RAM_START, LENGTH = S_FB1_RAM_SIZE
+  BOOT_ARGS (rw)  : ORIGIN = BOOTARGS_START, LENGTH = BOOTARGS_SIZE
+  AUX1_RAM (rw)   : ORIGIN = AUX1_RAM_START, LENGTH = AUX1_RAM_SIZE
 }
 
 _stack_section_start = ADDR(.stack);
@@ -22,7 +22,7 @@ _bss_section_end = ADDR(.bss) + SIZEOF(.bss);
 _bootargs_ram_start = BOOTARGS_START;
 _bootargs_ram_end = BOOTARGS_START + BOOTARGS_SIZE;
 
-_codelen = SIZEOF(.flash) + SIZEOF(.data);
+_codelen = _image_flash_end - ADDR(.flash);
 
 SECTIONS {
   .vendorheader : ALIGN(4) {
@@ -58,13 +58,16 @@ SECTIONS {
   }
 
   .stack : ALIGN(8) {
-    . = 16K; /* this acts as a build time assertion that at least this much memory is available for stack use */
+    . += 16K; /* this acts as a build time assertion that at least this much memory is available for stack use */
   } >MAIN_STACK
 
   .data : ALIGN(4) {
     *(.data*);
     . = ALIGN(512);
   } >AUX1_RAM AT>FLASH
+
+  /* End of code/data in FLASH */
+  _image_flash_end = LOADADDR(.data) + SIZEOF(.data);
 
   .bss : ALIGN(4) {
     *(.bss*);

@@ -13,7 +13,7 @@ use crate::{
             FixedHeightBar,
         },
         display::Color,
-        geometry::{Insets, Offset},
+        geometry::Offset,
         util::include_icon,
     },
 };
@@ -400,7 +400,7 @@ pub const fn button_keyboard() -> ButtonStyleSheet {
             font: fonts::FONT_DEMIBOLD,
             text_color: GREY_DARK,
             button_color: BG, // so there is no "button" itself, just the text
-            icon_color: GREY_LIGHT,
+            icon_color: GREY_DARK,
             background_color: BG,
         },
     }
@@ -824,21 +824,6 @@ pub const CHECKLIST_DONE_OFFSET: Offset = Offset::y(-2);
 
 pub const fn button_bar<T>(inner: T) -> FixedHeightBar<T> {
     FixedHeightBar::bottom(inner, BUTTON_HEIGHT)
-}
-
-/// +----------+
-/// |     6    |
-/// |  +----+  |
-/// | 6|    | 6|
-/// |  +----+  |
-/// |     6    |
-/// +----------+
-pub const fn borders() -> Insets {
-    Insets::new(0, 0, 0, 0)
-}
-
-pub const fn borders_notification() -> Insets {
-    Insets::new(42, 0, 0, 0)
 }
 
 pub const RESULT_ERROR: ResultStyle =

@@ -1,10 +1,17 @@
 {
   "current": {
-    "merkle_root": "49c8c53118a0b74b395243ae701c8ba7e063ba4c7c87244dce791ee77d777001",
-    "datetime": "2026-04-20T11:24:57.527910+00:00",
-    "commit": "638ee4434bde72db9a4b81571aaac1b85435cfa6"
+    "merkle_root": "0e59628386f44b47e66a934a1b6c632cf4ee048b0322e82cf27eb0690cb5e2c1",
+    "datetime": "2026-04-29T14:48:26.117421+00:00",
+    "commit": "9d3c6ce08ab9e21bbbd16b6e40fbb18debd3641a"
   },
   "history": [
+    {
+      "signature": "03fe9a96f5de508cf01e0c622db1d87b6a79792a5cfd3cd083f3b24d188f72109f8a8d948106f4625fc73c82cb5a66199ea7b18335eed49df8ef47782b9100c104",
+      "version": "2.11.1.0",
+      "merkle_root": "cce9cef94d67e56d732dfc2554baea86283fc50fbcf11272b7e33be1353425be",
+      "datetime": "2026-03-31T15:20:37.315437+00:00",
+      "commit": "ef73d69c06a0496a06ca849ed4f84d9beafe5c2c"
+    },
     {
       "signature": "03dd6832fe00b101d62ee5393a0e323040891338c4b1769541c8bb89f0421945382b750ae84588dc237ee0709c0333b53f87e970c6d8e01a9f1af3819827ffdc02",
       "version": "2.11.0.0",

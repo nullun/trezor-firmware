@@ -46,7 +46,6 @@ impl PassphraseInput {
     const TWITCH: i16 = 4;
     const STYLE: TextStyle =
         theme::TEXT_REGULAR.with_line_breaking(LineBreaking::BreakWordsNoHyphen);
-    const SHOWN_TOUCH_OUTSET: Insets = Insets::bottom(200);
     const ICON: Icon = theme::ICON_DASH_VERTICAL;
     const ICON_WIDTH: i16 = Self::ICON.toif.width();
     const ICON_SPACE: i16 = 12;
@@ -106,7 +105,7 @@ impl PassphraseInput {
         debug_assert_ne!(self.display_style, DisplayStyle::Shown);
 
         let hidden_area: Rect = self.area.inset(KEYBOARD_INPUT_INSETS);
-        let pp_len = self.content().len();
+        let pp_len = self.textbox.count();
         let last_char = self.display_style != DisplayStyle::Hidden;
 
         let mut cursor = hidden_area.left_center().ofs(Offset::x(12));
@@ -154,27 +153,26 @@ impl PassphraseInput {
         }
 
         if last_char {
-            // This should not fail because pp_len > 0
-            let last = &self.content()[(pp_len - 1)..pp_len];
+            if let Some(last) = self.textbox.last_char_str() {
+                // Adapt x and y positions for the character
+                cursor.y += Self::STYLE.text_font.visible_text_height("1") / 2;
 
-            // Adapt x and y positions for the character
-            cursor.y += Self::STYLE.text_font.visible_text_height("1") / 2;
+                // Paint the last character
+                Text::new(cursor, last, Self::STYLE.text_font)
+                    .with_align(Alignment::Start)
+                    .with_fg(Self::STYLE.text_color)
+                    .render(target);
 
-            // Paint the last character
-            Text::new(cursor, last, Self::STYLE.text_font)
-                .with_align(Alignment::Start)
-                .with_fg(Self::STYLE.text_color)
-                .render(target);
-
-            // Paint the pending marker.
-            if self.display_style == DisplayStyle::LastWithMarker {
-                render_pending_marker(
-                    target,
-                    cursor,
-                    last,
-                    Self::STYLE.text_font,
-                    Self::STYLE.text_color,
-                );
+                // Paint the pending marker.
+                if self.display_style == DisplayStyle::LastWithMarker {
+                    render_pending_marker(
+                        target,
+                        cursor,
+                        last,
+                        Self::STYLE.text_font,
+                        Self::STYLE.text_color,
+                    );
+                }
             }
         }
     }
@@ -299,13 +297,6 @@ impl Component for PassphraseInput {
             return None;
         }
 
-        // Extend the passphrase area downward to allow touch input without the finger
-        // covering the passphrase
-        let extended_shown_area = self
-            .shown_area
-            .outset(Self::SHOWN_TOUCH_OUTSET)
-            .clamp(SCREEN);
-
         match event {
             Event::Timer(_) if self.multi_tap.timeout_event(event) => {
                 self.multi_tap.clear_pending_state(ctx);
@@ -317,7 +308,7 @@ impl Component for PassphraseInput {
                 }
                 return None;
             }
-            // Return touch start if the touch is detected inside the touchable area
+            // Reveal on touch start within the input area
             Event::Touch(TouchEvent::TouchStart(pos)) if self.area.contains(pos) => {
                 self.multi_tap.clear_pending_state(ctx);
                 // Stop the last char timer
@@ -327,20 +318,8 @@ impl Component for PassphraseInput {
                 self.update_shown_area();
                 return Some(StringInputMsg::UpdateKeypad);
             }
-            // Return touch end if the touch end is detected inside the visible area
-            Event::Touch(TouchEvent::TouchEnd(pos))
-                if extended_shown_area.contains(pos)
-                    && self.display_style == DisplayStyle::Shown =>
-            {
-                self.multi_tap.clear_pending_state(ctx);
-                self.display_style = DisplayStyle::Hidden;
-                return Some(StringInputMsg::UpdateKeypad);
-            }
-            // Return touch end if the touch moves out of the visible area
-            Event::Touch(TouchEvent::TouchMove(pos))
-                if !extended_shown_area.contains(pos)
-                    && self.display_style == DisplayStyle::Shown =>
-            {
+            // Hide on touch end anywhere on the screen
+            Event::Touch(TouchEvent::TouchEnd(_)) if self.display_style == DisplayStyle::Shown => {
                 self.multi_tap.clear_pending_state(ctx);
                 self.display_style = DisplayStyle::Hidden;
                 return Some(StringInputMsg::UpdateKeypad);

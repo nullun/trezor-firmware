@@ -386,8 +386,9 @@ pub trait FirmwareUI {
     fn show_info(
         title: TString<'static>,
         description: TString<'static>,
-        button: TString<'static>,
+        button: Option<(TString<'static>, bool)>,
         time_ms: u32,
+        external_menu: bool, // TODO: will eventually replace the internal menu
     ) -> Result<Gc<LayoutObj>, Error>; // TODO: return LayoutMaybeTrace
 
     fn show_info_with_cancel(

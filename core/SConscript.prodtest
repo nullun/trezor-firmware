@@ -65,7 +65,7 @@ if DBG_CONSOLE != "":
 
 env = Environment(
     ENV=os.environ,
-    CFLAGS='%s -DPRODUCTION=%s' % (ARGUMENTS.get('CFLAGS', ''), ARGUMENTS.get('PRODUCTION', '0')),
+    CFLAGS=f"{ARGUMENTS.get('CFLAGS', '')} -DPRODUCTION={int(PRODUCTION)} -DBOOTLOADER_DEVEL={int(BOOTLOADER_DEVEL)}",
     CPPDEFINES_IMPLICIT=[],
     CPPDEFPREFIX="-D'",
     CPPDEFSUFFIX="'",
@@ -144,17 +144,6 @@ if 'boot_ucb' in FEATURES_AVAILABLE:
         'vendor/sphincsplus/ref/utils.c',
         'vendor/sphincsplus/ref/wots.c',
     ]
-
-SOURCE_MLDSA = [
-        'vendor/mldsa-native/mldsa/fips202/fips202.c',
-        'vendor/mldsa-native/mldsa/fips202/fips202x4.c',
-        'vendor/mldsa-native/mldsa/fips202/keccakf1600.c',
-        'vendor/mldsa-native/mldsa/ntt.c',
-        'vendor/mldsa-native/mldsa/packing.c',
-        'vendor/mldsa-native/mldsa/poly.c',
-        'vendor/mldsa-native/mldsa/polyvec.c',
-        'vendor/mldsa-native/mldsa/sign.c',
-]
 
 # modtrezorui
 CPPPATH_MOD += [
@@ -318,7 +307,6 @@ obj_program.extend(env.Object(source=SOURCE_MOD))
 obj_program.extend(env.Object(source=SOURCE_MOD_CRYPTO, CCFLAGS='$CCFLAGS -ftrivial-auto-var-init=zero'))
 obj_program.extend(env.Object(source=SOURCE_PRODTEST))
 obj_program.extend(env.Object(source=SOURCE_HAL))
-obj_program.extend(env.Object(source=SOURCE_MLDSA))
 
 if 'boot_ucb' in FEATURES_AVAILABLE:
     obj_program += env.Object(
@@ -353,10 +341,10 @@ elif (vh := os.environ.get("VENDOR_HEADER", None)):
     # we should figure out a cleaner way to pass in this argument, without having to teach
     # the Makefile about it.
     VENDORHEADER = f'embed/models/{TREZOR_MODEL}/vendorheader/{vh}'
-elif PRODUCTION:
-    VENDORHEADER = f'embed/models/{TREZOR_MODEL}/vendorheader/vendorheader_prodtest_signed_prod.bin'
 elif BOOTLOADER_DEVEL:
     VENDORHEADER = f'embed/models/{TREZOR_MODEL}/vendorheader/vendorheader_prodtest_DO_NOT_SIGN_signed_dev.bin'
+elif PRODUCTION:
+    VENDORHEADER = f'embed/models/{TREZOR_MODEL}/vendorheader/vendorheader_prodtest_signed_prod.bin'
 else:
     VENDORHEADER = f'embed/models/{TREZOR_MODEL}/vendorheader/vendorheader_unsafe_signed_prod.bin'
 
@@ -399,7 +387,7 @@ if secmon_prodtest:
         source=program_elf,
         action=[
             '$OBJCOPY -O binary -j .secmon_header -j .flash -j .data $SOURCE $TARGET',
-            '$HEADERTOOL $TARGET ' + ('-D' if ARGUMENTS.get('PRODUCTION', '0') == '0' else ''),
+            '$HEADERTOOL $TARGET ' + ('-D' if (BOOTLOADER_DEVEL or not PRODUCTION) else ''),
         ], )
 
     headers_bin = env.Command(
@@ -413,7 +401,7 @@ if secmon_prodtest:
         target='prodtest.bin',
         source=[ headers_bin, secmon_bin ],
         action=['cat ${SOURCES[0]} ${SOURCES[1]} > $TARGET',
-                '$HEADERTOOL $TARGET ' + ('-D' if ARGUMENTS.get('PRODUCTION', '0') == '0' else ''),
+                '$HEADERTOOL $TARGET ' + ('-D' if (BOOTLOADER_DEVEL or not PRODUCTION) else ''),
                 '$CP $TARGET ' + BINARY_NAME,]
     )
 
@@ -425,6 +413,6 @@ else:
         source=program_elf,
         action=[
             '$OBJCOPY -O binary -j .vendorheader -j .header -j .flash -j .data $SOURCE $TARGET',
-            '$HEADERTOOL $TARGET ' + ('-D' if ARGUMENTS.get('PRODUCTION', '0') == '0' else ''),
+            '$HEADERTOOL $TARGET ' + ('-D' if (BOOTLOADER_DEVEL or not PRODUCTION) else ''),
             '$CP $TARGET ' + BINARY_NAME,
         ], )

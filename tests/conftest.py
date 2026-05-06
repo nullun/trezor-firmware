@@ -335,6 +335,9 @@ def _prepared_test_ctx(
     if _raw_test_ctx.model not in models_filter:
         pytest.skip(f"Skipping test for model {_raw_test_ctx.model.internal_name}")
 
+    if request.node.get_closest_marker("emulator") and not _raw_test_ctx.is_emulator:
+        pytest.skip("Skipping emulator-only test")
+
     is_btc_only = messages.Capability.Bitcoin_like not in _raw_test_ctx.capabilities
     if request.node.get_closest_marker("altcoin") and is_btc_only:
         pytest.skip("Skipping altcoin test")
@@ -639,3 +642,30 @@ def device_handler(
     finalized_ok = device_handler.check_finalize()
     if test_res and not finalized_ok:  # type: ignore [rep_call must exist]
         raise RuntimeError("Test did not check result of background task")
+
+
+BACKUP_METHODS = [
+    pytest.param(arg, id=arg.name)
+    for arg in [
+        messages.BackupMethod.Display,
+        messages.BackupMethod.N4W1,
+    ]
+]
+
+
+@pytest.fixture(scope="session", params=BACKUP_METHODS)
+def backup_method(request, _raw_test_ctx: TrezorTestContext) -> messages.BackupMethod:
+    """
+    Return supported backup methods for current device using parametrized fixture.
+
+    See https://docs.pytest.org/en/stable/how-to/fixtures.html#parametrizing-fixtures.
+    """
+    REQUIRED_CAPABILITY = {
+        messages.BackupMethod.N4W1: messages.Capability.N4W1,
+    }
+    method: messages.BackupMethod = request.param
+    if (capability := REQUIRED_CAPABILITY.get(method)) is not None:
+        if capability not in _raw_test_ctx.capabilities:
+            pytest.skip(f"Missing {capability}")
+
+    return method

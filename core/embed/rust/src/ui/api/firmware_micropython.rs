@@ -1082,10 +1082,19 @@ extern "C" fn new_show_info(n_args: usize, args: *const Obj, kwargs: *mut Map) -
     let block = move |_args: &[Obj], kwargs: &Map| {
         let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
         let description: TString = kwargs.get(Qstr::MP_QSTR_description)?.try_into()?;
-        let button: TString = kwargs.get_or(Qstr::MP_QSTR_button, TString::empty())?;
+        let button = kwargs
+            .get(Qstr::MP_QSTR_button)
+            .unwrap_or_else(|_| Obj::const_none())
+            .try_into_option::<Obj>()?
+            .map(|obj| -> Result<(TString<'_>, bool), Error> {
+                let [text, enabled]: [Obj; 2] = util::iter_into_array(obj)?;
+                Ok((text.try_into()?, enabled.try_into()?))
+            })
+            .transpose()?;
         let time_ms: u32 = kwargs.get_or(Qstr::MP_QSTR_time_ms, 0)?.try_into()?;
+        let external_menu: bool = kwargs.get_or(Qstr::MP_QSTR_external_menu, false)?;
 
-        let obj = ModelUI::show_info(title, description, button, time_ms)?;
+        let obj = ModelUI::show_info(title, description, button, time_ms, external_menu)?;
         Ok(obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1449,8 +1458,19 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     def return_value(self) -> T:
     ///         """Retrieve the return value of the layout object."""
     ///
+    ///     # TODO: remove after https://github.com/trezor/trezor-firmware/issues/6811 is resolved.
     ///     def __del__(self) -> None:
     ///         """Calls drop on contents of the root component."""
+    ///
+    ///     # TODO: remove after https://github.com/trezor/trezor-firmware/issues/6811 is resolved.
+    ///     def __enter__(self) -> LayoutObj[T]:
+    ///         """Enters a context manager (checking the root component is not dropped)."""
+    ///
+    ///     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    ///         """Exits a context manager (dropping the root component)."""
+    ///
+    /// class LayoutContext(Generic[T]):
+    ///     """Scopes the lifetime of a Rust-based layout object."""
     ///
     ///     def __enter__(self) -> LayoutObj[T]:
     ///         """Enters a context manager (checking the root component is not dropped)."""
@@ -1755,7 +1775,7 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     xpubs: Sequence[tuple[str, str]],
     ///     br_code: ButtonRequestType,
     ///     br_name: str,
-    /// ) -> LayoutObj[UiResult]:
+    /// ) -> LayoutContext[UiResult]:
     ///     """Get address / receive funds."""
     Qstr::MP_QSTR_flow_get_address => obj_fn_kw!(0, new_flow_get_address).as_obj(),
 
@@ -1795,7 +1815,7 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     prompt: str,
     ///     prefill_word: str,
     ///     can_go_back: bool,
-    /// ) -> LayoutObj[str]:
+    /// ) -> LayoutContext[str]:
     ///     """BIP39 word input keyboard."""
     Qstr::MP_QSTR_request_bip39 => obj_fn_kw!(0, new_request_bip39).as_obj(),
 
@@ -1804,7 +1824,7 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     prompt: str,
     ///     prefill_word: str,
     ///     can_go_back: bool,
-    /// ) -> LayoutObj[str]:
+    /// ) -> LayoutContext[str]:
     ///     """SLIP39 word input keyboard."""
     Qstr::MP_QSTR_request_slip39 => obj_fn_kw!(0, new_request_slip39).as_obj(),
 
@@ -1867,7 +1887,7 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     items: Iterable[str],
     ///     current: int,
     ///     cancel: str | None = None
-    /// ) -> LayoutObj[int]:
+    /// ) -> LayoutContext[int]:
     ///     """Select an item from a menu. Returns index in range `0..len(items)`."""
     Qstr::MP_QSTR_select_menu => obj_fn_kw!(0, new_select_menu).as_obj(),
 
@@ -2024,8 +2044,9 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     *,
     ///     title: str,
     ///     description: str = "",
-    ///     button: str = "",
+    ///     button: tuple[str, bool] | None = None,
     ///     time_ms: int = 0,
+    ///     external_menu: bool = False,
     /// ) -> LayoutObj[UiResult]:
     ///     """Info screen."""
     Qstr::MP_QSTR_show_info => obj_fn_kw!(0, new_show_info).as_obj(),

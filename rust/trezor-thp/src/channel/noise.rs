@@ -12,7 +12,7 @@ pub use trezor_noise_protocol::{Cipher, DH, Hash, U8Array};
 
 use crate::{
     Device, Error, Host, Role,
-    channel::PairingState,
+    channel::{MAX_CREDENTIAL_LEN, PairingState},
     credential::{CredentialStore, CredentialVerifier},
     util::prepare_zeroed,
 };
@@ -23,7 +23,6 @@ pub const HANDSHAKE_HASH_LEN: usize = 32;
 pub const PRIVKEY_LEN: usize = 32;
 pub const PUBKEY_LEN: usize = 32;
 pub const TAG_LEN: usize = 16;
-pub const MAX_KEY_AND_CREDENTIAL_LEN: usize = 128;
 
 /// Cryptography backend trait.
 ///
@@ -48,10 +47,12 @@ pub struct NoiseHandshake<R: Role, B: Backend> {
     hss: HandshakeState<B::DH, B::Cipher, B::Hash>,
     _phantom: PhantomData<R>,
 }
+
 pub struct NoiseCiphers<B: Backend> {
     encrypt: CipherState<B::Cipher>,
     decrypt: CipherState<B::Cipher>,
     handshake_hash: [u8; HANDSHAKE_HASH_LEN],
+    remote_static_pubkey: [u8; PUBKEY_LEN],
 }
 
 impl<B: Backend> NoiseCiphers<B> {
@@ -75,14 +76,18 @@ impl<B: Backend> NoiseCiphers<B> {
     pub fn handshake_hash(&self) -> &[u8; HANDSHAKE_HASH_LEN] {
         &self.handshake_hash
     }
+
+    pub fn remote_static_pubkey(&self) -> &[u8; PUBKEY_LEN] {
+        &self.remote_static_pubkey
+    }
 }
 
 impl<B: Backend> NoiseHandshake<Host, B> {
-    pub fn write_initiation_request<'a>(
+    pub fn write_initiation_request(
         device_properties: &[u8],
         try_to_unlock: bool,
-        dest: &'a mut [u8],
-    ) -> Result<(Self, &'a [u8]), Error> {
+        dest: &mut [u8],
+    ) -> Result<(Self, usize), Error> {
         let payload = &[u8::from(try_to_unlock)];
         let mut hss = HandshakeState::new(
             noise_xx(),
@@ -100,34 +105,34 @@ impl<B: Backend> NoiseHandshake<Host, B> {
             hss,
             _phantom: PhantomData,
         };
-        Ok((new, dest))
+        Ok((new, len))
     }
 
-    pub fn write_completion_request<'a>(
+    pub fn write_completion_request(
         &mut self,
         cred_store: &mut impl CredentialStore,
-        buffer: &'a mut [u8],
-        incoming_len: usize,
-    ) -> Result<(NoiseCiphers<B>, &'a [u8]), Error> {
-        if incoming_len != self.hss.get_next_message_overhead() {
+        receive_buffer: &[u8],
+        send_buffer: &mut [u8],
+    ) -> Result<(NoiseCiphers<B>, usize), Error> {
+        if receive_buffer.len() != self.hss.get_next_message_overhead() {
             log::error!("Unexpected message length during handshake.");
             return Err(Error::malformed_data());
         }
-        let incoming = buffer
-            .get(..incoming_len)
-            .ok_or_else(Error::insufficient_buffer)?;
-        self.hss.read_message(incoming, &mut [])?;
+        self.hss.read_message(receive_buffer, &mut [])?;
 
         // Look up static key based on remote keys, or generate a new one.
-        let remote_static_key = self.hss.get_rs().ok_or_else(Error::crypto_error)?;
-        let remote_ephemeral_key = self.hss.get_re().ok_or_else(Error::crypto_error)?;
-        let (local_static, pairing_credential) =
-            Self::credential_from_store(cred_store, &remote_ephemeral_key, &remote_static_key)?;
+        let remote_static_pubkey = self.hss.get_rs().ok_or_else(Error::crypto_error)?;
+        let remote_ephemeral_pubkey = self.hss.get_re().ok_or_else(Error::crypto_error)?;
+        let (local_static, pairing_credential) = Self::credential_from_store(
+            cred_store,
+            &remote_ephemeral_pubkey,
+            &remote_static_pubkey,
+        )?;
         self.hss.set_s(local_static);
 
-        buffer.fill(0);
+        send_buffer.fill(0);
         let len = self.hss.get_next_message_overhead() + pairing_credential.len();
-        let dest = buffer
+        let dest = send_buffer
             .get_mut(..len)
             .ok_or_else(Error::insufficient_buffer)?;
         self.hss
@@ -137,25 +142,25 @@ impl<B: Backend> NoiseHandshake<Host, B> {
             return Err(Error::crypto_error());
         }
         let (encrypt, decrypt) = self.hss.get_ciphers();
-        let mut handshake_hash = [0u8; HANDSHAKE_HASH_LEN];
-        handshake_hash.copy_from_slice(self.hss.get_hash());
+        let handshake_hash = self.hss.get_hash().try_into().unwrap();
         let nc = NoiseCiphers {
             encrypt,
             decrypt,
             handshake_hash,
+            remote_static_pubkey: remote_static_pubkey.as_slice().try_into().unwrap(),
         };
-        Ok((nc, dest))
+        Ok((nc, len))
     }
 
     fn credential_from_store(
         cs: &impl CredentialStore,
         re: &DHPubKey<B>,
         rs: &DHPubKey<B>,
-    ) -> Result<(DHPrivKey<B>, heapless::Vec<u8, MAX_KEY_AND_CREDENTIAL_LEN>), Error>
+    ) -> Result<(DHPrivKey<B>, heapless::Vec<u8, MAX_CREDENTIAL_LEN>), Error>
     where
         DHPrivKey<B>: U8Array,
     {
-        let mut buf = heapless::Vec::new();
+        let mut buf = heapless::Vec::<u8, { PRIVKEY_LEN + MAX_CREDENTIAL_LEN }>::new();
         prepare_zeroed(&mut buf);
         let result = cs.lookup(re.as_slice(), rs.as_slice(), buf.as_mut_slice());
         if let Some(found) = result {
@@ -164,9 +169,8 @@ impl<B: Backend> NoiseHandshake<Host, B> {
                 .map_err(|_| Error::insufficient_buffer())?;
             return Ok((found_key, found_credential));
         }
-        buf.clear();
         let new_key = <B::DH as DH>::genkey();
-        Ok((new_key, buf))
+        Ok((new_key, heapless::Vec::new()))
     }
 }
 
@@ -199,11 +203,11 @@ impl<B: Backend> NoiseHandshake<Device, B> {
         Ok(try_to_unlock)
     }
 
-    pub fn write_initiation_response<'a>(
+    pub fn write_initiation_response(
         &mut self,
         static_privkey: &[u8; PRIVKEY_LEN],
-        dest: &'a mut [u8],
-    ) -> Result<&'a [u8], Error> {
+        dest: &mut [u8],
+    ) -> Result<usize, Error> {
         let mk = Self::mask_key(static_privkey);
         self.hss.set_s(mk.static_privkey);
         self.hss.set_s_mask(mk.mask);
@@ -211,22 +215,22 @@ impl<B: Backend> NoiseHandshake<Device, B> {
         let len = self.hss.get_next_message_overhead();
         let dest = dest.get_mut(..len).ok_or_else(Error::insufficient_buffer)?;
         self.hss.write_message(/*payload*/ &[], dest)?; // no outgoing payload
-        Ok(dest)
+        Ok(len)
     }
 
-    pub fn write_completion_response<'a>(
+    pub fn write_completion_response(
         &mut self,
         incoming: &[u8],
         cred_verifier: &impl CredentialVerifier,
-        dest: &'a mut [u8],
-    ) -> Result<(NoiseCiphers<B>, PairingState, &'a [u8]), Error> {
+        dest: &mut [u8],
+    ) -> Result<(NoiseCiphers<B>, PairingState, usize), Error> {
         let overhead_len = self.hss.get_next_message_overhead();
         if incoming.len() < overhead_len {
             log::error!("Unexpected message length during handshake.");
             return Err(Error::malformed_data());
         }
         let cred_len = incoming.len().saturating_sub(overhead_len);
-        let mut cred = heapless::Vec::<u8, MAX_KEY_AND_CREDENTIAL_LEN>::new();
+        let mut cred = heapless::Vec::<u8, MAX_CREDENTIAL_LEN>::new();
         cred.resize(cred_len, 0u8)
             .map_err(|_| Error::insufficient_buffer())?;
         self.hss.read_message(incoming, &mut cred)?;
@@ -235,16 +239,22 @@ impl<B: Backend> NoiseHandshake<Device, B> {
             return Err(Error::crypto_error());
         }
 
-        let remote_static_pubkey = self.hss.get_rs().ok_or_else(Error::crypto_error)?;
+        let remote_static_pubkey = self
+            .hss
+            .get_rs()
+            .ok_or_else(Error::crypto_error)?
+            .as_slice()
+            .try_into()
+            .unwrap();
+        let handshake_hash = self.hss.get_hash().try_into().unwrap();
         let (decrypt, encrypt) = self.hss.get_ciphers();
-        let mut handshake_hash = [0u8; HANDSHAKE_HASH_LEN];
-        handshake_hash.copy_from_slice(self.hss.get_hash());
         let mut nc = NoiseCiphers {
             encrypt,
             decrypt,
             handshake_hash,
+            remote_static_pubkey,
         };
-        let pairing_state = cred_verifier.verify(remote_static_pubkey.as_slice(), &cred);
+        let pairing_state = cred_verifier.verify(&nc.remote_static_pubkey, &cred);
         let payload = &[pairing_state as u8];
         let plaintext_len = payload.len();
         let dest = dest
@@ -252,7 +262,7 @@ impl<B: Backend> NoiseHandshake<Device, B> {
             .ok_or_else(Error::insufficient_buffer)?;
         dest[0..plaintext_len].copy_from_slice(payload);
         nc.encrypt(dest, plaintext_len)?;
-        Ok((nc, pairing_state, dest))
+        Ok((nc, pairing_state, dest.len()))
     }
 
     fn mask_key(static_privkey: &[u8; PRIVKEY_LEN]) -> MaskKeyResult<B>

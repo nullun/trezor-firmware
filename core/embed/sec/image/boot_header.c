@@ -29,61 +29,8 @@
 #include <../vendor/sphincsplus/ref/api.h>
 #include <ed25519-donna/ed25519.h>
 
-#include <version.h>
-
-#ifdef BOOTLOADER
-extern const uint8_t _bootloader_code_size;
-
-typedef union {
-  boot_header_auth_t hdr;
-  uint8_t raw[BOOT_HEADER_MAXSIZE];
-} boot_header_padded_t;
-
-__attribute__((section(".header")))
-const boot_header_padded_t g_bootloader_header = {
-    .hdr = {
-        .magic = BOOT_HEADER_MAGIC_TRZQ,
-        .hw_model = HW_MODEL,
-        .hw_revision = HW_REVISION,
-        .version =
-            {
-                .major = VERSION_MAJOR,
-                .minor = VERSION_MINOR,
-                .patch = VERSION_PATCH,
-                .build = VERSION_BUILD,
-            },
-        .fix_version =
-            {
-                .major = FIX_VERSION_MAJOR,
-                .minor = FIX_VERSION_MINOR,
-                .patch = FIX_VERSION_PATCH,
-                .build = FIX_VERSION_BUILD,
-            },
-        .min_prev_version =
-            {
-                .major = 0,
-                .minor = 0,
-                .patch = 0,
-                .build = 0,
-            },
-        .monotonic_version = BOOTLOADER_MONOTONIC_VERSION,
-        // The sigmask field is properly initialized later by headertool_pq
-        // (= 0 => no keys used for signature verification; prevents booting)
-        .sigmask = 0,
-        .header_size = BOOT_HEADER_MAXSIZE,
-        // The authenticated part size is calculated for a zero-length Merkle
-        // proof, since the Merkle proof is not known at compile time.
-        // headertool_pq must update this value later when adding the Merkle
-        // proof to the header.
-        .auth_size = BOOT_HEADER_MAXSIZE - sizeof(boot_header_merkle_proof_t) -
-                     sizeof(boot_header_unauth_t),
-        .code_size = (uint32_t)&_bootloader_code_size,
-        .storage_address = STORAGE_1_START,
-    }};
-#endif
-
 static const uint8_t * const BOARDLOADER_PQ_KEYS[] = {
-#if !PRODUCTION
+#if BOOTLOADER_DEVEL
     (const uint8_t*) "\xec\x01\xe6\x02\x63\x02\x4f\x7e\x71\x72\x80\x13\xb7\x31\xf7\xba\x12\x99\xf5\x18\xc2\x7b\xa3\xed\x8f\x4a\x21\x99\x74\x12\x7c\x62",
     (const uint8_t*) "\x8a\xf8\x87\x80\x85\x94\x6e\xd8\xb1\x16\xbd\x24\xc0\xf2\xaa\xc4\x8b\x7e\x8f\x11\xbf\x06\x87\x25\xcc\xfb\xb1\x52\xab\xf7\xa4\xcd",
 #else
@@ -92,7 +39,7 @@ static const uint8_t * const BOARDLOADER_PQ_KEYS[] = {
 };
 
 static const uint8_t * const BOARDLOADER_EC_KEYS[] = {
-#if !PRODUCTION
+#if BOOTLOADER_DEVEL
     (const uint8_t*) "\xdb\x99\x5f\xe2\x51\x69\xd1\x41\xca\xb9\xbb\xba\x92\xba\xa0\x1f\x9f\x2e\x1e\xce\x7d\xf4\xcb\x2a\xc0\x51\x90\xf3\x7f\xcc\x1f\x9d",
     (const uint8_t*) "\x21\x52\xf8\xd1\x9b\x79\x1d\x24\x45\x32\x42\xe1\x5f\x2e\xab\x6c\xb7\xcf\xfa\x7b\x6a\x5e\xd3\x00\x97\x96\x0e\x06\x98\x81\xdb\x12",
 #else

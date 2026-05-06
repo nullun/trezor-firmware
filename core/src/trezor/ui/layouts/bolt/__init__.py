@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from trezor.messages import StellarAsset
 
     from ..common import ExceptionType, PropertyType, StrPropertyType
+    from ..properties import AboveThreshold
     from ..slip24 import Refund, Trade
 
 
@@ -503,15 +504,13 @@ async def confirm_payment_request(
     title = TR.words__swap if is_swap(trades) else TR.words__confirm
 
     for t, text in texts:
-        await raise_if_not_confirmed(
-            trezorui_api.confirm_value(
-                title=t or title,
-                value=text,
-                is_data=False,
-                description=None,
-            ),
-            "confirm_payment_request",
-        )
+        with trezorui_api.confirm_value(
+            title=t or title,
+            value=text,
+            is_data=False,
+            description=None,
+        ) as obj:
+            await raise_if_not_confirmed(obj, "confirm_payment_request")
 
     menu_items: list[StrPropertyType] = []
     if recipient_address is not None:
@@ -645,16 +644,13 @@ async def should_show_more(
     Raises ActionCancelled if the user cancels.
     """
 
-    result = await interact(
-        trezorui_api.confirm_with_info(
-            title=title,
-            items=items,
-            verb=confirm or TR.buttons__confirm,
-            verb_info=button_text,
-        ),
-        br_name,
-        br_code,
-    )
+    with trezorui_api.confirm_with_info(
+        title=title,
+        items=items,
+        verb=confirm or TR.buttons__confirm,
+        verb_info=button_text,
+    ) as layout_obj:
+        result = await interact(layout_obj, br_name, br_code)
 
     if result is CONFIRMED:
         return False
@@ -729,45 +725,6 @@ async def confirm_blob_intro(
 ) -> bool:
     """Not needed for this layout - `confirm_blob_prefix` can skip confirmation."""
     return False
-
-
-_INFO_DATA_ROWS = const(3)
-_INFO_DATA_WIDTH_BYTES = const(9)
-
-
-async def confirm_blob_prefix(
-    title: str,
-    data: memoryview,
-    *,
-    total_len: int,
-    confirmed_len: int,
-    br_name: str,
-    br_code: ButtonRequestType = BR_CODE_OTHER,
-) -> int | None:
-    """
-    Returns the number of bytes confirmed, or `None` if confirmation should be skipped.
-    """
-    # 3 rows x 18 hex digits (the maximal width is 19 digits)
-    prefix = data[: _INFO_DATA_ROWS * _INFO_DATA_WIDTH_BYTES]
-    prefix_parts = (
-        prefix[i * _INFO_DATA_WIDTH_BYTES : (i + 1) * _INFO_DATA_WIDTH_BYTES]
-        for i in range(_INFO_DATA_ROWS)
-    )
-    confirmed_len += len(prefix)
-
-    button_text = TR.words__show_next if confirmed_len < total_len else None
-
-    show_more = await should_show_more(
-        title=f"{title}:\n{confirmed_len} / {total_len} bytes",
-        items=[(utils.hexlify_if_bytes(part), True) for part in prefix_parts],
-        button_text=button_text,  # will return True
-        confirm=TR.words__confirm_all,  # will return False
-        br_name=br_name,
-        br_code=br_code,
-    )
-    if show_more:
-        return len(prefix)
-    return None
 
 
 def confirm_blob(
@@ -1069,6 +1026,42 @@ async def confirm_trade(
 
 if not utils.BITCOIN_ONLY:
 
+    _INFO_DATA_ROWS = const(3)
+    _INFO_DATA_WIDTH_BYTES = const(9)
+
+    async def confirm_blob_prefix(
+        data: memoryview,
+        *,
+        total_len: int,
+        confirmed_len: int,
+        br_name: str,
+        br_code: ButtonRequestType = BR_CODE_OTHER,
+    ) -> int | None:
+        """
+        Returns the number of bytes confirmed, or `None` if confirmation should be skipped.
+        """
+        # 3 rows x 18 hex digits (the maximal width is 19 digits)
+        prefix = data[: _INFO_DATA_ROWS * _INFO_DATA_WIDTH_BYTES]
+        prefix_parts = (
+            prefix[i * _INFO_DATA_WIDTH_BYTES : (i + 1) * _INFO_DATA_WIDTH_BYTES]
+            for i in range(_INFO_DATA_ROWS)
+        )
+        confirmed_len += len(prefix)
+
+        button_text = TR.words__show_next if confirmed_len < total_len else None
+
+        show_more = await should_show_more(
+            title=TR.ethereum__title_input_data_bytes.format(confirmed_len, total_len),
+            items=[(utils.hexlify_if_bytes(part), True) for part in prefix_parts],
+            button_text=button_text,  # will return True
+            confirm=TR.words__confirm_all,  # will return False
+            br_name=br_name,
+            br_code=br_code,
+        )
+        if show_more:
+            return len(prefix)
+        return None
+
     def confirm_ethereum_unknown_contract_warning(
         _title: str | None,
     ) -> Awaitable[None]:
@@ -1159,13 +1152,15 @@ if not utils.BITCOIN_ONLY:
         chain_id: str,
         network_name: str,
         is_revoke: bool,
-        total_amount: str | None,
+        total_amount: str | AboveThreshold | None,
         account: str | None,
         account_path: str | None,
         maximum_fee: str,
         fee_info_items: Iterable[StrPropertyType],
         chunkify: bool = False,
     ) -> None:
+        from ..properties import AboveThreshold
+
         await confirm_value(
             (
                 TR.ethereum__approve_intro_title_revoke
@@ -1192,7 +1187,7 @@ if not utils.BITCOIN_ONLY:
             chunkify=False if recipient_str else chunkify,
         )
 
-        if total_amount is None:
+        if isinstance(total_amount, AboveThreshold):
             await show_warning(
                 "confirm_ethereum_approve",
                 TR.ethereum__approve_unlimited_template.format(token_symbol),
@@ -1225,7 +1220,11 @@ if not utils.BITCOIN_ONLY:
             else [
                 (
                     TR.ethereum__approve_amount_allowance,
-                    total_amount or TR.words__unlimited,
+                    (
+                        total_amount.message
+                        if isinstance(total_amount, AboveThreshold)
+                        else total_amount
+                    ),
                     False,
                 )
             ]
@@ -1341,13 +1340,90 @@ if not utils.BITCOIN_ONLY:
         intro_question: str,
         verb: str,
         vault_str: str,
-        total_amount: str,
+        amount: str,
+        amount_label: str,
         account: str | None,
         account_path: str | None,
         maximum_fee: str,
         info_items: Iterable[StrPropertyType],
         chain: str,
         br_name: str = "ethereum/vault",
+        br_code: ButtonRequestType = ButtonRequestType.SignTx,
+        extra_data: str | None = None,
+    ) -> None:
+
+        account_properties: list[StrPropertyType] = []
+        if account:
+            account_properties.append((TR.words__account, account, None))
+        if account_path:
+            account_properties.append(
+                (TR.address_details__derivation_path, account_path, None)
+            )
+
+        await confirm_value(
+            title=title,
+            value=intro_question,
+            description="",
+            br_name=f"{br_name}/intro",
+            br_code=br_code,
+            verb=TR.buttons__continue,
+            is_data=False,
+            info_items=account_properties if account_properties else None,
+            info_title=TR.address_details__account_info,
+        )
+
+        await confirm_value(
+            title=title,
+            value=vault_str,
+            description=verb,
+            br_name=f"{br_name}/vault",
+            br_code=br_code,
+            verb=TR.buttons__continue,
+        )
+
+        await confirm_properties(
+            br_name=f"{br_name}/amount",
+            title=title,
+            props=[
+                (amount_label, amount, False),
+                (TR.words__chain, chain, False),
+            ],
+            br_code=br_code,
+        )
+
+        if extra_data is not None:
+            await confirm_value(
+                title=title,
+                value=extra_data,
+                description=TR.ethereum__calldata_suffix,
+                br_name=f"{br_name}/extra_data",
+                br_code=br_code,
+                verb=TR.buttons__continue,
+                is_data=True,
+                cancel=True,
+            )
+
+        await _confirm_summary(
+            amount=None,
+            amount_label=None,
+            fee=maximum_fee,
+            fee_label=TR.send__maximum_fee,
+            title=title,
+            extra_items=info_items,
+            extra_title=TR.confirm_total__title_fee,
+            br_name=f"{br_name}/summary",
+            br_code=br_code,
+        )
+
+    async def confirm_ethereum_vault_claim(
+        title: str,
+        intro_question: str,
+        account: str | None,
+        account_path: str | None,
+        maximum_fee: str,
+        info_items: Iterable[StrPropertyType],
+        token_list: str,
+        br_name: str,
         br_code: ButtonRequestType = ButtonRequestType.SignTx,
     ) -> None:
 
@@ -1363,7 +1439,7 @@ if not utils.BITCOIN_ONLY:
             title=title,
             value=intro_question,
             description="",
-            br_name=br_name + "/intro",
+            br_name=f"{br_name}/intro",
             br_code=br_code,
             verb=TR.buttons__continue,
             is_data=False,
@@ -1371,22 +1447,10 @@ if not utils.BITCOIN_ONLY:
             info_title=TR.address_details__account_info,
         )
 
-        await confirm_value(
-            title=verb,
-            value=vault_str,
-            description="",
-            br_name=br_name + "/vault",
-            br_code=br_code,
-            verb=TR.buttons__continue,
-        )
-
         await confirm_properties(
-            br_name=br_name + "/amount",
+            br_name=f"{br_name}/tokens",
             title=title,
-            props=[
-                (TR.ethereum__deposit_amount, total_amount, False),
-                (TR.words__chain, chain, False),
-            ],
+            props=[(TR.ethereum__reward_tokens, token_list, False)],
             br_code=br_code,
         )
 
@@ -1398,7 +1462,7 @@ if not utils.BITCOIN_ONLY:
             title=title,
             extra_items=info_items,
             extra_title=TR.confirm_total__title_fee,
-            br_name=br_name + "/summary",
+            br_name=f"{br_name}/summary",
             br_code=br_code,
         )
 

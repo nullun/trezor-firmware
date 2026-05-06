@@ -151,6 +151,7 @@ enum MessageType {
     MessageType_DebugLinkN4W1Write = 9015 [(bitcoin_only) = true, (wire_debug_out) = true];
     MessageType_DebugLinkN4W1Read = 9016 [(bitcoin_only) = true, (wire_debug_out) = true];
     MessageType_DebugLinkN4W1Response = 9017 [(bitcoin_only) = true, (wire_debug_in) = true];
+    MessageType_DebugLinkSetBatteryState = 9018 [(bitcoin_only) = true, (wire_debug_in) = true];
 
     // Ethereum
     MessageType_EthereumGetPublicKey = 450 [(wire_in) = true];
@@ -171,6 +172,8 @@ enum MessageType {
     MessageType_EthereumTypedDataValueAck = 468 [(wire_in) = true];
     MessageType_EthereumTypedDataSignature = 469 [(wire_out) = true];
     MessageType_EthereumSignTypedHash = 470 [(wire_in) = true];
+    MessageType_EthereumDefinitionRequest = 471 [(wire_out) = true];
+    MessageType_EthereumDefinitionAck = 472 [(wire_in) = true];
 
     // NEM
     MessageType_NEMGetAddress = 67 [(wire_in) = true];

@@ -201,7 +201,7 @@ void optiga_init_and_configure(void) {
   smcall_invoke0(SMCALL_OPTIGA_INIT_AND_CONFIGURE);
 }
 
-#if PYOPT == 0
+#if USE_OPTIGA_TESTING
 void optiga_set_sec_max(void) { smcall_invoke0(SMCALL_OPTIGA_SET_SEC_MAX); }
 
 #endif
@@ -222,6 +222,30 @@ secbool secret_key_delegated_identity(uint16_t rotation_index,
 }
 
 #endif
+
+#ifdef USE_MCU_ATTESTATION
+#include <sec/mcu_attestation.h>
+
+secbool mcu_attestation_cert_size(size_t *cert_size) {
+  return (secbool)smcall_invoke1((uint32_t)cert_size,
+                                 SMCALL_MCU_ATTESTATION_CERT_SIZE);
+}
+
+secbool mcu_attestation_cert_read(uint8_t *cert, size_t max_cert_size,
+                                  size_t *cert_size) {
+  return (secbool)smcall_invoke3((uint32_t)cert, (uint32_t)max_cert_size,
+                                 (uint32_t)cert_size,
+                                 SMCALL_MCU_ATTESTATION_CERT_READ);
+}
+
+secbool mcu_attestation_sign(const uint8_t *challenge, size_t challenge_size,
+                             uint8_t signature[MCU_ATTESTATION_SIG_SIZE]) {
+  return (secbool)smcall_invoke3((uint32_t)challenge, (uint32_t)challenge_size,
+                                 (uint32_t)signature,
+                                 SMCALL_MCU_ATTESTATION_SIGN);
+}
+
+#endif  // USE_MCU_ATTESTATION
 
 // =============================================================================
 // storage.h
@@ -395,7 +419,7 @@ bool backup_ram_write(uint16_t key, backup_ram_item_type_t type,
 
 #endif  // USE_BACKUP_RAM
 
-#ifdef USE_NRF
+#ifdef USE_NRF_AUTH
 
 #include <sec/secret.h>
 

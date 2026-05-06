@@ -17,8 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TREZORHAL_PVD_H
-#define TREZORHAL_PVD_H
+#pragma once
 
 #ifdef KERNEL_MODE
 
@@ -29,5 +28,3 @@
 void pvd_init(void);
 
 #endif  // KERNEL_MODE
-
-#endif  // TREZORHAL_PVD_H

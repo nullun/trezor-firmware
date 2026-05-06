@@ -28,6 +28,7 @@
 #include <io/usb_config.h>
 #include <rtl/cli.h>
 #include <sec/board_capabilities.h>
+#include <sec/rsod_special.h>
 #include <sec/unit_properties.h>
 #include <sys/flash_otp.h>
 #include <sys/system.h>
@@ -94,6 +95,10 @@
 
 #ifdef USE_STORAGE_HWKEY
 #include <sec/secure_aes.h>
+#endif
+
+#ifdef USE_TRUSTZONE
+#include <sec/tz_init.h>
 #endif
 
 #ifdef USE_BLE
@@ -220,6 +225,10 @@ int main(void) {
 #else
 int prodtest_main(void) {
 #endif
+#ifdef USE_TRUSTZONE
+  tz_init();
+#endif
+
   system_init(&rsod_panic_handler);
 
   drivers_init();

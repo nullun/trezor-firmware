@@ -155,6 +155,8 @@ static void _librust_qstrs(void) {
   MP_QSTR_backup__title_backup_wallet;
   MP_QSTR_backup__title_create_wallet_backup;
   MP_QSTR_backup__title_skip;
+  MP_QSTR_backup__type_create;
+  MP_QSTR_backup__type_have;
   MP_QSTR_backup__type_n4w1;
   MP_QSTR_backup__type_wordlist;
   MP_QSTR_backup__want_to_skip;
@@ -475,12 +477,16 @@ static void _librust_qstrs(void) {
   MP_QSTR_modify_fee__transaction_fee;
   MP_QSTR_more_info_callback;
   MP_QSTR_multiple_pages_texts;
+  MP_QSTR_n4w1__err_damaged;
+  MP_QSTR_n4w1__err_empty;
+  MP_QSTR_n4w1__err_nonempty;
   MP_QSTR_n4w1__footer_first;
   MP_QSTR_n4w1__footer_last;
   MP_QSTR_n4w1__footer_next;
   MP_QSTR_n4w1__hold_first;
   MP_QSTR_n4w1__hold_last;
   MP_QSTR_n4w1__hold_next;
+  MP_QSTR_n4w1__reading;
   MP_QSTR_n4w1__writing;
   MP_QSTR_notification;
   MP_QSTR_page_count;
@@ -1333,6 +1339,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_ethereum__approve_revoke_from;
   MP_QSTR_ethereum__approve_to;
   MP_QSTR_ethereum__approve_unlimited_template;
+  MP_QSTR_ethereum__calldata_suffix;
   MP_QSTR_ethereum__confirm_contract;
   MP_QSTR_ethereum__contract_address;
   MP_QSTR_ethereum__data_size_template;
@@ -1348,6 +1355,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_ethereum__new_contract;
   MP_QSTR_ethereum__no_message_field;
   MP_QSTR_ethereum__priority_fee;
+  MP_QSTR_ethereum__redeem;
   MP_QSTR_ethereum__redeem_amount;
   MP_QSTR_ethereum__redeem_from;
   MP_QSTR_ethereum__reward_tokens;
@@ -1365,6 +1373,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_ethereum__staking_stake_intro;
   MP_QSTR_ethereum__staking_unstake;
   MP_QSTR_ethereum__staking_unstake_intro;
+  MP_QSTR_ethereum__subtitle_input_data_bytes;
   MP_QSTR_ethereum__title_all_input_data_template;
   MP_QSTR_ethereum__title_confirm_domain;
   MP_QSTR_ethereum__title_confirm_message;
@@ -1372,6 +1381,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_ethereum__title_confirm_struct;
   MP_QSTR_ethereum__title_confirm_typed_data;
   MP_QSTR_ethereum__title_input_data;
+  MP_QSTR_ethereum__title_input_data_bytes;
   MP_QSTR_ethereum__title_signing_address;
   MP_QSTR_ethereum__title_token_contract;
   MP_QSTR_ethereum__token_contract;
@@ -1380,13 +1390,15 @@ static void _librust_qstrs(void) {
   MP_QSTR_ethereum__unknown_token;
   MP_QSTR_ethereum__valid_signature;
   MP_QSTR_ethereum__vault_claim_intro;
+  MP_QSTR_ethereum__vault_claim_to;
   MP_QSTR_ethereum__vault_deposit_intro;
   MP_QSTR_ethereum__vault_redeem_intro;
+  MP_QSTR_ethereum__vault_redeem_to;
   MP_QSTR_ethereum__vault_withdraw_intro;
   MP_QSTR_ethereum__withdraw;
+  MP_QSTR_ethereum__withdraw_amount;
   MP_QSTR_ethereum__withdraw_from;
-  MP_QSTR_ethereum__withdraw_intro;
-  MP_QSTR_ethereum__your_address;
+  MP_QSTR_ethereum__withdraw_to;
   MP_QSTR_fido__already_registered;
   MP_QSTR_fido__device_already_registered;
   MP_QSTR_fido__device_already_registered_with_template;

@@ -29,6 +29,7 @@
 #include <io/usb_config.h>
 #include <sec/image.h>
 #include <sec/random_delays.h>
+#include <sec/rsod_special.h>
 #include <sys/bootargs.h>
 #include <sys/bootutils.h>
 #include <sys/flash_otp.h>
@@ -46,6 +47,10 @@
 
 #ifdef USE_HASH_PROCESSOR
 #include <sec/hash_processor.h>
+#endif
+
+#ifdef USE_TRUSTZONE
+#include <sec/tz_init.h>
 #endif
 
 #define USB_IFACE_NUM SYSHANDLE_USB_WIRE
@@ -167,6 +172,10 @@ static secbool check_vendor_header_lock(const vendor_header *const vhdr) {
 }
 
 int main(void) {
+#ifdef USE_TRUSTZONE
+  tz_init();
+#endif
+
   system_init(&rsod_panic_handler);
 
   drivers_init();
@@ -191,7 +200,8 @@ int main(void) {
   // detect whether the device contains a valid firmware
   secbool firmware_present = sectrue;
 
-  if (sectrue != read_vendor_header((const uint8_t *)FIRMWARE_START, &vhdr)) {
+  if (sectrue != read_vendor_header((const uint8_t *)FIRMWARE_START,
+                                    VENDOR_HEADER_MAX_SIZE, &vhdr)) {
     firmware_present = secfalse;
   }
 
@@ -234,7 +244,8 @@ int main(void) {
     return 1;
   }
 
-  ensure(read_vendor_header((const uint8_t *)FIRMWARE_START, &vhdr),
+  ensure(read_vendor_header((const uint8_t *)FIRMWARE_START,
+                            VENDOR_HEADER_MAX_SIZE, &vhdr),
          "invalid vendor header");
 
   ensure(check_vendor_header_keys(&vhdr), "invalid vendor header signature");

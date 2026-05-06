@@ -7,6 +7,7 @@ WAKEUP_FLAG_BLE: int
 WAKEUP_FLAG_NFC: int
 WAKEUP_FLAG_RTC: int
 WAKEUP_FLAG_USB: int
+WAKEUP_FLAG_TOUCH: int
 
 # Power manager event flags:
 EVENT_POWER_STATUS_CHANGED: int
@@ -33,7 +34,7 @@ def suspend() -> int:
     """
     Suspends the device. Returns wakeup flag. Raises RuntimeError on
     failure.
-    Wakeup flags: BUTTON=1, POWER=2, BLE=4, NFC=8, RTC=16
+    Wakeup flags: BUTTON=1, POWER=2, BLE=4, NFC=8, RTC=16, USB=32, TOUCH=64
     """
 
 
@@ -57,4 +58,21 @@ def is_wireless_connected() -> bool:
     """
     Returns True if Wireless power source is connected, False otherwise.
     Raises RuntimeError on failure.
+    """
+
+
+# upymod/modtrezorio/modtrezorio-pm.h
+def set_emu_battery_state(
+    soc: int | None = None,
+    usb_connected: bool | None = None,
+    wireless_connected: bool | None = None,
+    ntc_connected: bool | None = None,
+    charging_limited: bool | None = None,
+    temp_control_active: bool | None = None,
+    battery_connected: bool | None = None,
+) -> None:
+    """
+    Set emulated battery/power state with fine-grained control.
+    Only available on emulator. Pass None to leave a field unchanged.
+    Charging status and power status are derived from connection states.
     """

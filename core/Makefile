@@ -31,7 +31,7 @@ PRODUCTION ?= 0
 DEBUGLINK ?= 0
 PYOPT      ?= 1
 BITCOIN_ONLY ?= 0
-BOOTLOADER_QA ?= 0
+FORCE_BOOTLOADER_UPGRADE ?= 0
 BOOTLOADER_DEVEL ?= 0
 UNSAFE_FW ?= 0
 TREZOR_MODEL ?= T3W1
@@ -51,6 +51,13 @@ UI_PERFORMANCE_OVERLAY ?= 0
 DBG_CONSOLE ?=
 EXTAPP_SUPPORT ?= 0
 N4W1 ?= 0
+
+ifeq ($(PRODUCTION),1)
+ifeq ($(BOOTLOADER_DEVEL),1)
+$(error PRODUCTION and BOOTLOADER_DEVEL cannot be set at the same time)
+# remove this check if you know what you are doing and need to build this way
+endif
+endif
 
 # If set, VCP writes will be blocking, in order to allow reliable debug data transmission over VCP.
 # Disabled by default, to prevent debug firmware from getting stuck while writing log messages (if the host is not reading them).
@@ -126,7 +133,7 @@ SCONS_VARS = \
 	BENCHMARK="$(BENCHMARK)" \
 	BITCOIN_ONLY="$(BITCOIN_ONLY)" \
 	BOOTLOADER_DEVEL="$(BOOTLOADER_DEVEL)" \
-	BOOTLOADER_QA="$(BOOTLOADER_QA)" \
+	FORCE_BOOTLOADER_UPGRADE="$(FORCE_BOOTLOADER_UPGRADE)" \
 	UNSAFE_FW="$(UNSAFE_FW)" \
 	CFLAGS="$(CFLAGS)" \
 	CMAKELISTS="$(CMAKELISTS)" \
@@ -335,8 +342,16 @@ build_secmon: ## build security monitor image
 build_kernel: ## build kernel image
 	$(SCONS) $(KERNEL_BUILD_DIR)/kernel.bin
 
+# build secmon locally if BOOTLOADER_DEVEL=1 and UNSAFE_FW=0
+BUILD_LOCAL_SECMON =
+ifeq ($(BOOTLOADER_DEVEL),1)
+ifeq ($(UNSAFE_FW),0)
+BUILD_LOCAL_SECMON = build_secmon
+endif
+endif
+
 build_firmware: MICROPY_ENABLE_SOURCE_LINE ?= 0
-build_firmware: templates build_cross $(if $(or $(filter 1,$(PRODUCTION)),$(filter 1,$(UNSAFE_FW))),,build_secmon) build_kernel ## build firmware with frozen modules
+build_firmware: templates build_cross $(BUILD_LOCAL_SECMON) build_kernel  ## build firmware with frozen modules
 	$(SCONS) $(FIRMWARE_BUILD_DIR)/firmware.bin
 
 build_unix: MICROPY_ENABLE_SOURCE_LINE ?= 1
@@ -537,7 +552,13 @@ upload: ## upload firmware using trezorctl
 upload_prodtest: ## upload prodtest using trezorctl
 	trezorctl firmware_update -s -f $(PRODTEST_BUILD_DIR)/prodtest.bin
 
-coverage:  ## generate coverage report
+# Skip the frozen-build rebuild when preprocessed `.i` files are already
+# present (e.g. downloaded as a CI artifact); otherwise build first so local
+# `make coverage` is self-contained.
+COVERAGE_I_SENTINEL := $(UNIX_BUILD_DIR)/src/trezor/utils.i
+COVERAGE_BUILD_DEP  := $(if $(wildcard $(COVERAGE_I_SENTINEL)),,build_unix_frozen)
+
+coverage: $(COVERAGE_BUILD_DEP) ## generate coverage report
 	./tools/coverage-report
 	./tools/coverage-annotate.py $(shell find . -name '.coverage*.json*') > htmlcov/hits.md
 

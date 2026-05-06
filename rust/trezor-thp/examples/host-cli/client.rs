@@ -2,10 +2,7 @@ use std::io::ErrorKind;
 use std::net::{SocketAddr, UdpSocket};
 use std::time::Duration;
 
-use trezor_thp::{
-    Backend, ChannelIO, Error, channel::buffered::Buffered, channel::host::Mux,
-    credential::CredentialStore,
-};
+use trezor_thp::{Backend, ChannelIO, channel::buffered::Buffered, channel::host::Mux};
 
 use protobuf::{Enum, Message};
 
@@ -23,12 +20,11 @@ pub struct Client<C> {
     emu_addr: SocketAddr,
 }
 
-impl<C, B> Client<Mux<C, B>>
+impl<B> Client<Mux<B>>
 where
     B: Backend,
-    C: CredentialStore,
 {
-    pub fn open(emu_addr: SocketAddr, channel: Mux<C, B>) -> Self {
+    pub fn open(emu_addr: SocketAddr, channel: Mux<B>) -> Self {
         let mut channel = Buffered::new(channel);
         channel.set_packet_len(PACKET_LEN);
         Client {
@@ -71,8 +67,7 @@ impl<C: ChannelIO> Client<C> {
                 None
             }
             Err(e) => {
-                log::error!("Cannot read from UDP socket: {}.", e);
-                panic!();
+                panic!("Cannot read from UDP socket: {}.", e);
             }
         }
     }
@@ -124,8 +119,7 @@ impl<C: ChannelIO> Client<C> {
             let mut done = false;
             while !done {
                 let Some(packet) = self.recv_from(READ_TIMEOUT) else {
-                    log::error!("Timed out waiting for response for {:?}.", READ_TIMEOUT);
-                    panic!();
+                    panic!("Timed out waiting for response for {:?}.", READ_TIMEOUT);
                 };
                 let pir = self.channel.packet_in(&packet).check_failed().unwrap();
                 assert!(!pir.got_transport_error());
@@ -134,13 +128,10 @@ impl<C: ChannelIO> Client<C> {
             }
             result = match self.channel.message_out() {
                 Ok(r) => Some(r),
-                Err(Error::InvalidChecksum | Error::MalformedData) => {
-                    log::error!("Received bad message, waiting for retransmission.");
-                    continue;
-                }
                 Err(e) => {
-                    log::error!("Cannot read message from channel: {:?}.", e);
-                    panic!();
+                    // Since checksum is verified in `packet_in`, there is no recoverable error
+                    // returned by `message_out`. Exit now to avoid getting stuck.
+                    panic!("Cannot read message from channel: {:?}.", e);
                 }
             };
         }

@@ -38,7 +38,7 @@ _Static_assert(VENDOR_HEADER_MAX_SIZE + IMAGE_HEADER_SIZE <= IMAGE_CHUNK_SIZE,
 const uint8_t BOARDLOADER_KEY_M = 2;
 const uint8_t BOARDLOADER_KEY_N = 3;
 static const uint8_t * const BOARDLOADER_KEYS[] = {
-#if !PRODUCTION
+#if BOOTLOADER_DEVEL
   (const uint8_t *)"\xdb\x99\x5f\xe2\x51\x69\xd1\x41\xca\xb9\xbb\xba\x92\xba\xa0\x1f\x9f\x2e\x1e\xce\x7d\xf4\xcb\x2a\xc0\x51\x90\xf3\x7f\xcc\x1f\x9d",
   (const uint8_t *)"\x21\x52\xf8\xd1\x9b\x79\x1d\x24\x45\x32\x42\xe1\x5f\x2e\xab\x6c\xb7\xcf\xfa\x7b\x6a\x5e\xd3\x00\x97\x96\x0e\x06\x98\x81\xdb\x12",
   (const uint8_t *)"\x22\xfc\x29\x77\x92\xf0\xb6\xff\xc0\xbf\xcf\xdb\x7e\xdb\x0c\x0a\xa1\x4e\x02\x5a\x36\x5e\xc0\xe3\x42\xe8\x6e\x38\x29\xcb\x74\xb6",
@@ -50,7 +50,7 @@ static const uint8_t * const BOARDLOADER_KEYS[] = {
 const uint8_t BOOTLOADER_KEY_M = 2;
 const uint8_t BOOTLOADER_KEY_N = 3;
 static const uint8_t * const BOOTLOADER_KEYS[] = {
-#if !PRODUCTION
+#if BOOTLOADER_DEVEL
     /*** DEVEL/QA KEYS  ***/
     (const uint8_t *)"\xd7\x59\x79\x3b\xbc\x13\xa2\x81\x9a\x82\x7c\x76\xad\xb6\xfb\xa8\xa4\x9a\xee\x00\x7f\x49\xf2\xd0\x99\x2d\x99\xb8\x25\xad\x2c\x48",
     (const uint8_t *)"\x63\x55\x69\x1c\x17\x8a\x8f\xf9\x10\x07\xa7\x47\x8a\xfb\x95\x5e\xf7\x35\x2c\x63\xe7\xb2\x57\x03\x98\x4c\xf7\x8b\x26\xe2\x1a\x56",
@@ -64,7 +64,7 @@ static const uint8_t * const BOOTLOADER_KEYS[] = {
 const uint8_t SECMON_KEY_M = 2;
 const uint8_t SECMON_KEY_N = 3;
 static const uint8_t * const SECMON_KEYS[] = {
-#if !PRODUCTION
+#if BOOTLOADER_DEVEL
   /*** DEVEL/QA KEYS  ***/
   (const uint8_t *)"\xdb\x99\x5f\xe2\x51\x69\xd1\x41\xca\xb9\xbb\xba\x92\xba\xa0\x1f\x9f\x2e\x1e\xce\x7d\xf4\xcb\x2a\xc0\x51\x90\xf3\x7f\xcc\x1f\x9d",
   (const uint8_t *)"\x21\x52\xf8\xd1\x9b\x79\x1d\x24\x45\x32\x42\xe1\x5f\x2e\xab\x6c\xb7\xcf\xfa\x7b\x6a\x5e\xd3\x00\x97\x96\x0e\x06\x98\x81\xdb\x12",
@@ -263,13 +263,24 @@ secbool check_secmon_contents(const secmon_header_t *const hdr,
 
 #endif  // USE_SECMON_VERIFICATION
 
-secbool __wur read_vendor_header(const uint8_t *const data,
+secbool __wur read_vendor_header(const uint8_t *const data, size_t data_size,
                                  vendor_header *const vhdr) {
+  // Need at least 23 bytes to safely read all fixed-offset fields through
+  // fw_type at offset 22.
+  if (data_size < 23) return secfalse;
+
   memcpy(&vhdr->magic, data, 4);
   if (vhdr->magic != 0x565A5254) return secfalse;  // TRZV
 
   memcpy(&vhdr->hdrlen, data + 4, 4);
   if (vhdr->hdrlen > VENDOR_HEADER_MAX_SIZE) return secfalse;
+
+  // hdrlen must be large enough to hold the IMAGE_SIG_SIZE-byte signature at
+  // its tail; otherwise the offset data + hdrlen - IMAGE_SIG_SIZE underflows.
+  if (vhdr->hdrlen < IMAGE_SIG_SIZE) return secfalse;
+
+  // The full declared header must fit within the provided buffer.
+  if (data_size < vhdr->hdrlen) return secfalse;
 
   memcpy(&vhdr->expiry, data + 8, 4);
   if (vhdr->expiry != 0) return secfalse;
@@ -285,6 +296,13 @@ secbool __wur read_vendor_header(const uint8_t *const data,
   memcpy(&vhdr->fw_type, data + 22, 1);
 
   if (vhdr->vsig_n > MAX_VENDOR_PUBLIC_KEYS) {
+    return secfalse;
+  }
+
+  // The public-key array and the vstr_len byte that follows it must all fit
+  // within the header body (the region before the trailing signature).
+  uint32_t vstr_len_offset = 32 + (uint32_t)vhdr->vsig_n * 32;
+  if (vstr_len_offset >= vhdr->hdrlen - IMAGE_SIG_SIZE) {
     return secfalse;
   }
 
@@ -466,10 +484,17 @@ secbool check_firmware_header(const uint8_t *header, size_t header_size,
                               firmware_header_info_t *info) {
   // parse and check vendor header
   vendor_header vhdr;
-  if (sectrue != read_vendor_header(header, &vhdr)) {
+  if (sectrue != read_vendor_header(header, header_size, &vhdr)) {
     return secfalse;
   }
   if (sectrue != check_vendor_header_keys(&vhdr)) {
+    return secfalse;
+  }
+
+  // Ensure the image header fits within the provided buffer after the vendor
+  // header.
+  if (header_size < vhdr.hdrlen ||
+      header_size - vhdr.hdrlen < IMAGE_HEADER_SIZE) {
     return secfalse;
   }
 

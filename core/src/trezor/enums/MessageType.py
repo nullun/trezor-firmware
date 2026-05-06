@@ -126,6 +126,7 @@ if __debug__:
     DebugLinkN4W1Write = 9015
     DebugLinkN4W1Read = 9016
     DebugLinkN4W1Response = 9017
+    DebugLinkSetBatteryState = 9018
 if utils.USE_THP:
     ThpCreateNewSession = 1000
     ThpCredentialRequest = 1016
@@ -152,6 +153,8 @@ if not utils.BITCOIN_ONLY:
     EthereumTypedDataValueAck = 468
     EthereumTypedDataSignature = 469
     EthereumSignTypedHash = 470
+    EthereumDefinitionRequest = 471
+    EthereumDefinitionAck = 472
     NEMGetAddress = 67
     NEMAddress = 68
     NEMSignTx = 69

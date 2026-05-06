@@ -8,6 +8,7 @@ BITCOIN_ONLY = ARGUMENTS.get('BITCOIN_ONLY', '0')
 EVERYTHING = BITCOIN_ONLY != '1'
 PRODUCTION = ARGUMENTS.get('PRODUCTION', '0') == '1'
 TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T2T1')
+BOOTLOADER_DEVEL = ARGUMENTS.get('BOOTLOADER_DEVEL', '0') == '1'
 CMAKELISTS = int(ARGUMENTS.get('CMAKELISTS', 0))
 HW_REVISION ='emulator'
 THP = ARGUMENTS.get('THP', '0') == '1' # Trezor-Host Protocol
@@ -470,13 +471,13 @@ ui.init_ui(TREZOR_MODEL, "firmware", RUST_UI_FEATURES)
 SOURCE_QSTR = SOURCE_MOD + SOURCE_MICROPYTHON + SOURCE_UNIX
 
 if PYOPT == '0' or not FROZEN:
-    DEBUG_FLAGS = "-DMICROPY_OOM_CALLBACK=1 -DSTATIC="
+    DEBUG_FLAGS = "-DMICROPY_OOM_CALLBACK=1 -DSTATIC= -DUSE_OPTIGA_TESTING=1"
 else:
     DEBUG_FLAGS = "-DMICROPY_OOM_CALLBACK=0"
 
 env = Environment(
     ENV=os.environ,
-    CFLAGS=ARGUMENTS.get("CFLAGS", "") + f" -DCONFIDENTIAL= -DPYOPT={PYOPT} -DBITCOIN_ONLY={BITCOIN_ONLY} {DEBUG_FLAGS}",
+    CFLAGS=ARGUMENTS.get("CFLAGS", "") + f" -DCONFIDENTIAL= -DPYOPT={PYOPT} -DBITCOIN_ONLY={BITCOIN_ONLY} {DEBUG_FLAGS} -DBOOTLOADER_DEVEL={int(BOOTLOADER_DEVEL)}",
     CPPDEFPREFIX="-D'",
     CPPDEFSUFFIX="'",
 )
@@ -895,6 +896,8 @@ if FROZEN:
         tropic='tropic' in FEATURES_AVAILABLE,
         use_ble='ble' in FEATURES_AVAILABLE,
         use_button='button' in FEATURES_AVAILABLE,
+        use_haptic='haptic' in FEATURES_AVAILABLE,
+        use_rgb_led='rgb_led' in FEATURES_AVAILABLE,
         use_touch='touch' in FEATURES_AVAILABLE,
         ui_layout=ui.get_ui_layout(TREZOR_MODEL),
         thp=THP,
@@ -902,6 +905,7 @@ if FROZEN:
         telemetry=TELEMETRY,
         n4w1=N4W1,
         include_source_lines=MICROPY_ENABLE_SOURCE_LINE,
+        emulator=True,
     )
 
     source_mpyc = env.FrozenCFile(

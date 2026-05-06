@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import trezorui_api
-from trezor import TR
+from trezor import TR, utils
 from trezor.enums import ButtonRequestType, RecoveryType
 
 from apps.common import backup_types
@@ -16,6 +16,8 @@ INFO = trezorui_api.INFO  # global_import_cache
 SUCCESS_SCREEN_TIMEOUT_MS = 2000
 
 if TYPE_CHECKING:
+    from trezor.messages import BackupMethod
+
     from apps.management.recovery_device.layout import RemainingSharesInfo
 
 
@@ -38,20 +40,20 @@ async def request_word(
 ) -> str:
     prompt = TR.recovery__word_x_of_y_template.format(word_index + 1, word_count)
     if is_slip39:
-        keyboard = trezorui_api.request_slip39(
+        ctx = trezorui_api.request_slip39(
             prompt=prompt, prefill_word=prefill_word, can_go_back=True
         )
     else:
-        keyboard = trezorui_api.request_bip39(
+        ctx = trezorui_api.request_bip39(
             prompt=prompt, prefill_word=prefill_word, can_go_back=True
         )
 
-    word: str = await interact(
-        keyboard,
-        "mnemonic" if send_button_request else None,
-        ButtonRequestType.MnemonicInput,
-    )
-    return word
+    with ctx as obj:
+        return await interact(
+            obj,
+            "mnemonic" if send_button_request else None,
+            ButtonRequestType.MnemonicInput,
+        )
 
 
 def format_remaining_shares_info(
@@ -215,3 +217,20 @@ async def show_dry_run_result(result: bool, is_slip39: bool) -> None:
             subheader="",
             button=TR.buttons__try_again,
         )
+
+
+if utils.USE_N4W1:
+
+    async def choose_method(title: str, description: str) -> BackupMethod:
+        import trezorui_api
+        from trezor.enums import BackupMethod
+
+        index = await interact(
+            trezorui_api.select_word(
+                title=title,
+                description=description,
+                words=(TR.backup__type_n4w1, TR.backup__type_wordlist, ""),
+            ),
+            br_name="choose_method",
+        )
+        return (BackupMethod.N4W1, BackupMethod.Display)[index]

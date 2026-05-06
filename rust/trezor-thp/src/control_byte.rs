@@ -125,7 +125,7 @@ impl ControlByte {
     }
 
     pub fn sync_bits(&self) -> SyncBits {
-        SyncBits::from(self.0 & SYNC_MASK)
+        SyncBits::from(self.0)
     }
 
     pub fn with_sync_bits(self, sb: SyncBits) -> Self {
@@ -149,7 +149,7 @@ impl TryFrom<u8> for ControlByte {
             || cb.is_handshake()
             || cb.is_codec_v1();
         if !valid {
-            log::warn!("Invalid control byte {}.", byte);
+            log::warn!("Invalid control byte 0x{:x}.", byte);
             return Err(Error::malformed_data());
         }
         Ok(cb)

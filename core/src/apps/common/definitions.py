@@ -1,6 +1,11 @@
 from typing import TYPE_CHECKING
 
-from trezor.messages import EthereumNetworkInfo, EthereumTokenInfo, SolanaTokenInfo
+from trezor.messages import (
+    EthereumDisplayFormatInfo,
+    EthereumNetworkInfo,
+    EthereumTokenInfo,
+    SolanaTokenInfo,
+)
 from trezor.wire import DataError
 
 if TYPE_CHECKING:
@@ -9,7 +14,11 @@ if TYPE_CHECKING:
 
     # NOTE: it's important all DefType variants can't be cross-parsed
     DefType = TypeVar(
-        "DefType", EthereumNetworkInfo, EthereumTokenInfo, SolanaTokenInfo
+        "DefType",
+        EthereumNetworkInfo,
+        EthereumTokenInfo,
+        SolanaTokenInfo,
+        EthereumDisplayFormatInfo,
     )
 
 
@@ -33,6 +42,8 @@ def decode_definition(definition: AnyBytes, expected_type: type[DefType]) -> Def
         expected_type_number = DefinitionType.ETHEREUM_TOKEN
     if expected_type.MESSAGE_NAME == SolanaTokenInfo.MESSAGE_NAME:
         expected_type_number = DefinitionType.SOLANA_TOKEN
+    if expected_type.MESSAGE_NAME == EthereumDisplayFormatInfo.MESSAGE_NAME:
+        expected_type_number = DefinitionType.ETHEREUM_DISPLAY_FORMAT
 
     try:
         # first check format version

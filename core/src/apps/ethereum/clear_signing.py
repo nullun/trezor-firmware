@@ -2,27 +2,39 @@ from micropython import const
 from typing import TYPE_CHECKING
 
 from trezor import TR
+from trezor.wire import DataError
 
-from .helpers import address_from_bytes, format_ethereum_amount, get_account_and_path
+from .definitions import Definitions
+from .helpers import (
+    address_from_bytes,
+    bytes_from_address,
+    format_ethereum_amount,
+    get_account_and_path,
+)
 
 if TYPE_CHECKING:
     from buffer_types import AnyBytes
     from typing import Callable, Iterable
 
-    from trezor.messages import EthereumTokenInfo
+    from trezor.messages import (
+        EthereumABIValueInfo,
+        EthereumERC7730FieldInfo,
+        EthereumTokenInfo,
+    )
     from trezor.ui.layouts import StrPropertyType
+    from trezor.ui.layouts.properties import AboveThreshold
+    from typing_extensions import Self
 
     from apps.common.payment_request import PaymentRequestVerifier
 
-    from .definitions import Definitions
     from .keychain import MsgInSignTx
 
     # Represents values that have been parsed from the calldata
     # into our internal representation.
     Value = int | bytes | bool | str | None | list["Value"]
-    StructValue = tuple[Value, ...]
-    ListValue = list[StructValue]
-    AnyValue = Value | StructValue | ListValue | list[Value | StructValue | ListValue]
+    TupleValue = tuple[Value, ...]
+    ListValue = list[TupleValue]
+    AnyValue = Value | TupleValue | ListValue | list[Value | TupleValue | ListValue]
 
     Path = tuple[int | tuple[int] | tuple[int, int], ...] | int
     PathWalker = Callable[[Path], Value]
@@ -78,8 +90,18 @@ def _check_padding_zero(
     raw_data: memoryview, used_bytes: int, exc: type[ValueOverflow] = ValueOverflow
 ) -> None:
     """Sanity check to make sure unused data is zeroed out."""
+    if not 0 <= used_bytes <= 32:
+        raise InvalidFormatDefinition
     if any(raw_data[: 32 - used_bytes]):
         raise exc
+
+
+def parse_address(raw_data: memoryview) -> Value:
+    _ZERO_PADDING = const(20)
+    if len(raw_data) < 32:
+        raise OutOfBounds
+    _check_padding_zero(raw_data, _ZERO_PADDING, DirtyAddress)
+    return bytes(raw_data[32 - _ZERO_PADDING :])
 
 
 def parse_uint256(raw_data: memoryview) -> Value:
@@ -88,18 +110,32 @@ def parse_uint256(raw_data: memoryview) -> Value:
     return int.from_bytes(raw_data, "big")
 
 
-def parse_uint160(raw_data: memoryview) -> Value:
-    if len(raw_data) < 32:
-        raise OutOfBounds
-    _check_padding_zero(raw_data, 160 // 8)
-    return parse_uint256(raw_data)
+def _make_uint_parser(bit_width: int) -> "Parser":
+    byte_width = bit_width // 8
+
+    def parser(raw_data: memoryview) -> Value:
+        if len(raw_data) < 32:
+            raise OutOfBounds
+        _check_padding_zero(raw_data, byte_width)
+        return parse_uint256(raw_data)
+
+    return parser
 
 
-def parse_uint24(raw_data: memoryview) -> Value:
-    if len(raw_data) < 32:
-        raise OutOfBounds
-    _check_padding_zero(raw_data, 24 // 8)
-    return parse_uint256(raw_data)
+parse_uint248 = _make_uint_parser(248)
+parse_uint160 = _make_uint_parser(160)
+parse_uint128 = _make_uint_parser(128)
+parse_uint120 = _make_uint_parser(120)
+parse_uint112 = _make_uint_parser(112)
+parse_uint96 = _make_uint_parser(96)
+parse_uint72 = _make_uint_parser(72)
+parse_uint64 = _make_uint_parser(64)
+parse_uint48 = _make_uint_parser(48)
+parse_uint40 = _make_uint_parser(40)
+parse_uint32 = _make_uint_parser(32)
+parse_uint24 = _make_uint_parser(24)
+parse_uint16 = _make_uint_parser(16)
+parse_uint8 = _make_uint_parser(8)
 
 
 def parse_bool(raw_data: memoryview) -> Value:
@@ -111,13 +147,6 @@ def parse_bool(raw_data: memoryview) -> Value:
     return uint_value == 1
 
 
-def parse_address(raw_data: memoryview) -> Value:
-    if len(raw_data) < 32:
-        raise OutOfBounds
-    _check_padding_zero(raw_data, 20, DirtyAddress)
-    return bytes(raw_data[32 - 20 :])
-
-
 def parse_bytes(raw_data: memoryview) -> Value:
     return bytes(raw_data)
 
@@ -127,6 +156,8 @@ def parse_string(raw_data: memoryview) -> Value:
 
 
 def parse_uint256_array(raw_data: memoryview) -> list[Value]:
+    if len(raw_data) % 32 != 0:
+        raise InvalidFunctionCall
     return [
         parse_uint256(raw_data[i * 32 : (i + 1) * 32])
         for i in range(len(raw_data) // 32)
@@ -135,17 +166,77 @@ def parse_uint256_array(raw_data: memoryview) -> list[Value]:
 
 DYNAMIC_DATA_PARSERS = [parse_bytes, parse_string, parse_uint256_array]
 
+
+def _get_parser(t: int, is_dynamic: bool) -> Parser:
+    """Get a parser for a type we received over the wire protocol.
+    `is_dynamic` selects whether the type is being used in a dynamic
+    (variable-length) or atomic (32-byte) context, and must match the type."""
+    from trezor.enums import EthereumABIType as T
+
+    if is_dynamic:
+        if t == T.ABI_BYTES:
+            return parse_bytes
+        elif t == T.ABI_STRING:
+            return parse_string
+        raise InvalidFormatDefinition
+
+    if t == T.ABI_ADDRESS:
+        return parse_address
+    elif t == T.ABI_UINT256:
+        return parse_uint256
+    elif t == T.ABI_UINT248:
+        return parse_uint248
+    elif t == T.ABI_UINT160:
+        return parse_uint160
+    elif t == T.ABI_UINT128:
+        return parse_uint128
+    elif t == T.ABI_UINT120:
+        return parse_uint120
+    elif t == T.ABI_UINT112:
+        return parse_uint112
+    elif t == T.ABI_UINT96:
+        return parse_uint96
+    elif t == T.ABI_UINT72:
+        return parse_uint72
+    elif t == T.ABI_UINT64:
+        return parse_uint64
+    elif t == T.ABI_UINT48:
+        return parse_uint48
+    elif t == T.ABI_UINT40:
+        return parse_uint40
+    elif t == T.ABI_UINT32:
+        return parse_uint32
+    elif t == T.ABI_UINT24:
+        return parse_uint24
+    elif t == T.ABI_UINT16:
+        return parse_uint16
+    elif t == T.ABI_UINT8:
+        return parse_uint8
+    elif t == T.ABI_BOOL:
+        return parse_bool
+    raise InvalidFormatDefinition
+
+
+def _get_leaf_parser(info: EthereumABIValueInfo) -> Parser:
+    """Get a parser for a leaf (atomic or dynamic) value. Raises for nested structures."""
+    if info.atomic is not None:
+        return _get_parser(info.atomic, is_dynamic=False)
+    elif info.dynamic is not None:
+        return _get_parser(info.dynamic, is_dynamic=True)
+    raise InvalidFormatDefinition
+
+
 # Field formatters: https://eips.ethereum.org/EIPS/eip-7730#field-formats
 
 
 class FieldFormatter:
-    def format(
+    async def format(
         self,
         value: AnyValue,
-        definitions: Definitions,
-        token: EthereumTokenInfo,
+        msg: MsgInSignTx,
+        defs: Definitions,
         path_walker: PathWalker,
-    ) -> tuple[str | None, EthereumTokenInfo | None, AnyBytes | None]:
+    ) -> tuple[str | AboveThreshold | None, EthereumTokenInfo | None, AnyBytes | None]:
         """
         Format a field using the current formatter.
         Return the formatted value and optionally a token and a token address,
@@ -156,13 +247,13 @@ class FieldFormatter:
 
 
 class AddressNameFormatter(FieldFormatter):
-    def format(
+    async def format(
         self,
         address: AnyValue,
-        definitions: Definitions,
-        _token: EthereumTokenInfo,
+        _msg: MsgInSignTx,
+        defs: Definitions,
         _path_walker: PathWalker,
-    ) -> tuple[str | None, EthereumTokenInfo | None, AnyBytes | None]:
+    ) -> tuple[str | AboveThreshold | None, EthereumTokenInfo | None, AnyBytes | None]:
         if address is None:
             return None, None, None
         elif isinstance(address, str):
@@ -170,17 +261,17 @@ class AddressNameFormatter(FieldFormatter):
         else:
             if not isinstance(address, bytes):
                 raise InvalidFormatDefinition
-            return address_from_bytes(address, definitions.network), None, None
+            return address_from_bytes(address, defs.network), None, None
 
 
 class AmountFormatter(FieldFormatter):
-    def format(
+    async def format(
         self,
         amount: AnyValue,
-        definitions: Definitions,
-        _token: EthereumTokenInfo,
-        _path_Walker: PathWalker,
-    ) -> tuple[str | None, EthereumTokenInfo | None, AnyBytes | None]:
+        _msg: MsgInSignTx,
+        defs: Definitions,
+        _path_walker: PathWalker,
+    ) -> tuple[str | AboveThreshold | None, EthereumTokenInfo | None, AnyBytes | None]:
         if amount is None:
             return None, None, None
         else:
@@ -190,13 +281,13 @@ class AmountFormatter(FieldFormatter):
             # Note: we are passing None rather than `_token`
             # to `format_ethereum_amount` because this formatter
             # is meant to be used with native ETH amounts
-            return format_ethereum_amount(amount, None, definitions.network), None, None
+            return format_ethereum_amount(amount, None, defs.network), None, None
 
 
 class TokenAmountFormatter(FieldFormatter):
     def __init__(
         self,
-        token_path: Path | None = None,
+        token_path: Path,
         native_currency_address: list[bytes] | None = None,
         threshold: int | None = None,
     ) -> None:
@@ -204,46 +295,56 @@ class TokenAmountFormatter(FieldFormatter):
         self.native_currency_address = native_currency_address
         self.threshold = threshold
 
-    def format(
+    async def format(
         self,
         amount: AnyValue,
-        definitions: Definitions,
-        token: EthereumTokenInfo | None,
+        msg: MsgInSignTx,
+        defs: Definitions,
         path_walker: PathWalker,
-    ) -> tuple[str | None, EthereumTokenInfo | None, AnyBytes | None]:
+    ) -> tuple[str | AboveThreshold | None, EthereumTokenInfo | None, AnyBytes | None]:
+        from trezor.ui.layouts.properties import AboveThreshold
+
+        from .tokens import UNKNOWN_TOKEN
+
         if amount is None:
             return None, None, None
+
+        if not isinstance(amount, int):
+            raise InvalidFormatDefinition
+
+        token_address = path_walker(self.token_path)
+        if not isinstance(token_address, bytes):
+            raise InvalidFormatDefinition
+
+        if self.native_currency_address is not None:
+            if token_address in self.native_currency_address:
+                if self.threshold is not None and amount > self.threshold:
+                    return AboveThreshold(TR.words__unlimited), None, None
+                else:
+                    return (
+                        format_ethereum_amount(amount, None, defs.network),
+                        None,
+                        None,
+                    )
+
+        # Non-native currency - dealing with tokens
+
+        token = defs.get_token(token_address)
+        if token is UNKNOWN_TOKEN:
+            if msg.supports_definition_request:
+                received_definitions, _ = await _request_definitions(
+                    msg.chain_id, token_address, func_sig=None
+                )
+                if received_definitions is not None:
+                    token = received_definitions.get_token(token_address)
+
+        if self.threshold is not None and amount > self.threshold:
+            return AboveThreshold(TR.words__unlimited), token, token_address
         else:
-            if not isinstance(amount, int):
-                raise InvalidFormatDefinition
-            if self.threshold is not None and amount > self.threshold:
-                # TODO: figure out a way for the formatter to signal that the amount was above the threshold.
-                # For now we return None and `confirm_ethereum_approve` shows the "Unlimited amount" warning,
-                # but the `tokenAmount` spec allows this message to be customized in which case
-                # being above the threshold could mean something else, not just "Unlimited".
-                return None, None, None
-            if self.token_path is not None:
-                token_address = path_walker(self.token_path)
-                if not isinstance(token_address, bytes):
-                    raise InvalidFormatDefinition
-                is_native_currency = False
-                if self.native_currency_address is not None:
-                    if token_address in self.native_currency_address:
-                        is_native_currency = True
-                token = (
-                    definitions.get_token(token_address)
-                    if not is_native_currency
-                    else None
-                )
-                return (
-                    format_ethereum_amount(amount, token, definitions.network),
-                    token,
-                    token_address if not is_native_currency else None,
-                )
             return (
-                format_ethereum_amount(amount, token, definitions.network),
+                format_ethereum_amount(amount, token, defs.network),
                 token,
-                token.address if token else None,
+                token_address,
             )
 
 
@@ -253,13 +354,13 @@ class UnitFormatter(FieldFormatter):
         self.base = base
         self.prefix = prefix
 
-    def format(
+    async def format(
         self,
         value: AnyValue,
+        _msg: MsgInSignTx,
         _definitions: Definitions,
-        _token: EthereumTokenInfo,
         _path_walker: PathWalker,
-    ) -> tuple[str | None, EthereumTokenInfo | None, AnyBytes | None]:
+    ) -> tuple[str | AboveThreshold | None, EthereumTokenInfo | None, AnyBytes | None]:
         if value is None:
             return None, None, None
         else:
@@ -311,6 +412,33 @@ class ABIValue:
     def parse(self, raw_data: memoryview, offset: int) -> tuple[AnyValue, int]:
         raise NotImplementedError
 
+    @staticmethod
+    def from_proto(info: EthereumABIValueInfo) -> "ABIValue":
+        if info.atomic is not None:
+            return Atomic(_get_parser(info.atomic, is_dynamic=False))
+        elif info.dynamic is not None:
+            return Dynamic(_get_parser(info.dynamic, is_dynamic=True))
+        elif info.tuple is not None:
+            return Tuple(
+                tuple(_get_leaf_parser(f) for f in info.tuple.fields),
+                info.tuple.is_dynamic,
+            )
+        elif info.array is not None:
+            element = info.array
+            if element.atomic is not None:
+                return Array(Atomic(_get_parser(element.atomic, is_dynamic=False)))
+            elif element.dynamic is not None:
+                return Array(Dynamic(_get_parser(element.dynamic, is_dynamic=True)))
+            elif element.tuple is not None:
+                return Array(
+                    Tuple(
+                        tuple(_get_leaf_parser(f) for f in element.tuple.fields),
+                        is_dynamic=False,  # Tuples inside Arrays are always parsed as static!
+                    )
+                )
+            raise InvalidFormatDefinition  # Array of arrays not supported
+        raise InvalidFormatDefinition
+
 
 class Atomic(ABIValue):
     """Atomic values, such as integers or addresses, are always stored on 32 bytes."""
@@ -319,9 +447,20 @@ class Atomic(ABIValue):
         self.parser = parser
 
     def parse(self, raw_data: memoryview, offset: int) -> tuple[AnyValue, int]:
-        if offset > len(raw_data):
+        if offset + 32 > len(raw_data):
             raise OutOfBounds
         return self.parser(raw_data[offset : offset + 32]), 32
+
+
+def _read_dynamic_data(raw_data: memoryview, pointer: int) -> memoryview:
+    """Read a variable-length blob located at `pointer` in `raw_data`,
+    encoded as a 32-byte length prefix followed by `length` bytes of data."""
+    if pointer + 32 > len(raw_data):
+        raise OutOfBounds
+    length = int.from_bytes(raw_data[pointer : pointer + 32], "big")
+    if pointer + 32 + length > len(raw_data):
+        raise OutOfBounds
+    return raw_data[pointer + 32 : pointer + 32 + length]
 
 
 class Dynamic(ABIValue):
@@ -337,28 +476,23 @@ class Dynamic(ABIValue):
         if offset + 32 > len(raw_data):
             raise OutOfBounds
         pointer = int.from_bytes(raw_data[offset : offset + 32], "big")
-        if pointer + 32 > len(raw_data):
-            raise OutOfBounds
-        length = int.from_bytes(raw_data[pointer : pointer + 32], "big")
-        if pointer + 32 + length > len(raw_data):
-            raise OutOfBounds
-        data = raw_data[pointer + 32 : pointer + 32 + length]
+        data = _read_dynamic_data(raw_data, pointer)
         return self.parser(data), 32
 
 
-class Struct(ABIValue):
-    """Structs (or Tuples, which are essentially the same thing as far as ABI is concerned)
+class Tuple(ABIValue):
+    """Tuples (or Structs, which are essentially the same thing as far as ABI is concerned)
     contain multiple values of different types.
-    A Struct is "dynamic" if at least one of the values is dynamic.
+    A Tuple is "dynamic" if at least one of the values is dynamic.
     However, dynamic structs inside arrays behave as static structs,
-    hence we cannot guess if the Struct is dynamic by looking at just its fields."""
+    hence we cannot guess if the Tuple is dynamic by looking at just its fields."""
 
     def __init__(self, fields: tuple[Parser, ...], is_dynamic: bool) -> None:
         self.fields = fields
         self.is_dynamic = is_dynamic
         self.static_size = len(fields) * 32
 
-    def parse(self, raw_data: memoryview, offset: int) -> tuple[StructValue, int]:
+    def parse(self, raw_data: memoryview, offset: int) -> tuple[TupleValue, int]:
         if not self.is_dynamic:
             base_offset = offset
             consumed = self.static_size
@@ -380,23 +514,15 @@ class Struct(ABIValue):
             if parser not in DYNAMIC_DATA_PARSERS:
                 v = parser(raw_field)
                 if isinstance(v, (tuple, list)):
-                    # Struct or Array inside a Struct
+                    # Tuple or Array inside a Tuple
                     raise NotImplementedError
                 value[i] = v
             else:
                 field_pointer = base_offset + int.from_bytes(raw_field, "big")
-
-                if field_pointer + 32 > len(raw_data):
-                    raise OutOfBounds
-                length = int.from_bytes(
-                    raw_data[field_pointer : field_pointer + 32], "big"
-                )
-                if field_pointer + 32 + length > len(raw_data):
-                    raise OutOfBounds
-                raw_field = raw_data[field_pointer + 32 : field_pointer + 32 + length]
+                raw_field = _read_dynamic_data(raw_data, field_pointer)
                 v = parser(raw_field)
                 if isinstance(v, (tuple, list)):
-                    # Struct or Array inside a Struct
+                    # Tuple or Array inside a Tuple
                     raise NotImplementedError
                 value[i] = v
         return tuple(value), consumed
@@ -444,11 +570,11 @@ class Array(ABIValue):
 # https://eips.ethereum.org/EIPS/eip-7730#evm-transaction-container
 
 
+# Note: Keep this in sync with `EthereumERC7730ContainerPath` from `messages-definitions.proto`.
 class ContainerPath:
     From = 1
     Value = 2
     To = 3
-    ChainID = 4
 
 
 class FieldDefinition:
@@ -461,6 +587,44 @@ class FieldDefinition:
         self.path = path
         self.label = label
         self.formatter = formatter
+
+    @staticmethod
+    def from_proto(info: EthereumERC7730FieldInfo) -> "FieldDefinition":
+        from trezor.enums import EthereumERC7730FieldFormatterType as FT
+        from trezor.messages import EthereumERC7730Path
+
+        def decode_path(p: EthereumERC7730Path) -> Path:
+            if p.container_path is not None:
+                return p.container_path
+            return tuple(p.path)
+
+        path = decode_path(info.path)
+
+        fmt_type = info.formatter
+        if fmt_type == FT.FORMATTER_ADDRESS_NAME:
+            formatter = AddressNameFormatter
+        elif fmt_type == FT.FORMATTER_AMOUNT:
+            formatter = AmountFormatter
+        elif fmt_type == FT.FORMATTER_TOKEN_AMOUNT:
+            formatter_params = {}
+            if info.token_path is not None:
+                formatter_params["token_path"] = decode_path(info.token_path)
+            if info.threshold is not None:
+                formatter_params["threshold"] = int.from_bytes(info.threshold, "big")
+            formatter = TokenAmountFormatter(**formatter_params)
+        elif fmt_type == FT.FORMATTER_UNIT:
+            formatter_params = {}
+            if info.decimals is not None:
+                formatter_params["decimals"] = info.decimals
+            if info.base is not None:
+                formatter_params["base"] = info.base
+            if info.prefix is not None:
+                formatter_params["prefix"] = info.prefix
+            formatter = UnitFormatter(**formatter_params)
+        else:
+            raise InvalidFormatDefinition
+
+        return FieldDefinition(path=path, label=info.label, formatter=formatter)
 
     def get_formatter(self) -> FieldFormatter:
         # instantiate formatters only if needed
@@ -495,16 +659,20 @@ class DisplayFormat:
 
         return self.binding_context.matches(chain_id, address)
 
-    def parse(
+    async def parse_calldata(
         self,
         calldata: memoryview,
-        address_n: list[int],
-        tx_value: AnyBytes,
-        definitions: Definitions,
-        token: EthereumTokenInfo,
+        msg: MsgInSignTx,
+        defs: Definitions,
     ) -> tuple[
         list[AnyValue],
-        list[tuple[StrPropertyType, EthereumTokenInfo | None, AnyBytes | None]],
+        list[
+            tuple[
+                tuple[str, str | AboveThreshold | None, bool | None],
+                EthereumTokenInfo | None,
+                AnyBytes | None,
+            ]
+        ],
     ]:
         parameters: list[AnyValue] = []
 
@@ -518,10 +686,12 @@ class DisplayFormat:
             if isinstance(path, int):  # ContainerPath
                 # standard container paths like @.from, @.value...
                 if path == ContainerPath.From:
-                    account, _ = get_account_and_path(address_n)
+                    account, _ = get_account_and_path(msg.address_n)
                     return account
                 elif path == ContainerPath.Value:
-                    return int.from_bytes(tx_value, "big")
+                    return int.from_bytes(msg.value, "big")
+                elif path == ContainerPath.To:
+                    return bytes_from_address(msg.to)
                 else:
                     raise NotImplementedError  # TODO
             else:
@@ -536,7 +706,7 @@ class DisplayFormat:
                         p = None
                         break
                     if isinstance(p, (list, tuple, bytes)):
-                        # walk inside Arrays or Structs
+                        # walk inside Arrays or Tuples
                         try:
                             if isinstance(step, int):
                                 p = p[step]
@@ -555,44 +725,90 @@ class DisplayFormat:
                         raise InvalidFormatDefinition
                 if isinstance(p, (list, tuple)):
                     # at the end of the path, we must have arrived somewhere
-                    # ie. not on an Array or Struct
+                    # ie. not on an Array or Tuple
                     raise InvalidFormatDefinition
                 return p
 
         fields: list[
-            tuple[StrPropertyType, EthereumTokenInfo | None, AnyBytes | None]
+            tuple[
+                tuple[str, str | AboveThreshold | None, bool | None],
+                EthereumTokenInfo | None,
+                AnyBytes | None,
+            ]
         ] = []
         for field_definition in self.field_definitions:
-            (
-                formatted_value,
-                actual_token,
-                actual_token_address,
-            ) = field_definition.get_formatter().format(
-                get_value_for_path(field_definition.path),
-                definitions,
-                token,
-                get_value_for_path,
+            value = get_value_for_path(field_definition.path)
+            formatter = field_definition.get_formatter()
+
+            formatted, token, token_address = await formatter.format(
+                value, msg, defs, get_value_for_path
             )
+
             fields.append(
                 (
-                    (
-                        field_definition.label,
-                        formatted_value,
-                        None,
-                    ),
-                    actual_token,
-                    actual_token_address,
+                    (field_definition.label, formatted, None),
+                    token,
+                    token_address,
                 )
             )
 
         return parameters, fields
 
+    @classmethod
+    def from_encoded(cls, encoded: AnyBytes) -> Self:
+        from trezor.messages import EthereumDisplayFormatInfo
 
-async def try_parse(
+        from apps.common.definitions import decode_definition
+
+        proto = decode_definition(encoded, EthereumDisplayFormatInfo)
+
+        return cls(
+            binding_context=BindingContext([(proto.chain_id, bytes(proto.address))]),
+            func_sig=bytes(proto.func_sig),
+            intent=proto.intent,
+            parameter_definitions=[
+                ABIValue.from_proto(p) for p in proto.parameter_definitions
+            ],
+            field_definitions=[
+                FieldDefinition.from_proto(f) for f in proto.field_definitions
+            ],
+        )
+
+
+async def _request_definitions(
+    chain_id: int, token_address: bytes, func_sig: bytes | None
+) -> tuple[Definitions | None, DisplayFormat | None]:
+    from trezor.messages import EthereumDefinitionAck, EthereumDefinitionRequest
+    from trezor.wire.context import call
+
+    req = EthereumDefinitionRequest(
+        chain_id=chain_id,
+        token_address=token_address,
+        func_sig=func_sig,
+    )
+    res = await call(req, EthereumDefinitionAck)
+
+    if res.definitions is None:
+        return None, None
+
+    definitions = Definitions.from_encoded(
+        res.definitions.encoded_network, res.definitions.encoded_token, chain_id
+    )
+
+    display_format = (
+        DisplayFormat.from_encoded(res.definitions.encoded_display_format)
+        if res.definitions.encoded_display_format is not None
+        else None
+    )
+
+    return definitions, display_format
+
+
+async def try_confirm(
     data: AnyBytes,
     address_bytes: bytes,
     msg: MsgInSignTx,
-    definitions: Definitions,
+    defs: Definitions,
     maximum_fee: str,
     fee_items: Iterable[StrPropertyType],
     payment_request_verifier: PaymentRequestVerifier | None,
@@ -609,21 +825,42 @@ async def try_parse(
     if len(data) < SC_FUNC_SIG_BYTES:
         return False
 
-    func_sig = data[0:SC_FUNC_SIG_BYTES]
+    func_sig = bytes(data[0:SC_FUNC_SIG_BYTES])
 
     display_format = None
     for f in ALL_DISPLAY_FORMATS:
-        if f.func_sig == func_sig:
+        # Start by trying built-in definitions...
+        if f.func_sig == func_sig and f.matches_context(msg.chain_id, address_bytes):
             display_format = f
             break
     else:
+        if msg.definitions and msg.definitions.encoded_display_format:
+            # ... look at definitions provided in the initial request...
+            f = DisplayFormat.from_encoded(msg.definitions.encoded_display_format)
+            if f.func_sig == func_sig and f.matches_context(
+                msg.chain_id, address_bytes
+            ):
+                display_format = f
+        if display_format is None:
+            # ... finally request the display format via another call!
+            if msg.supports_definition_request:
+                _, f = await _request_definitions(msg.chain_id, address_bytes, func_sig)
+                if f:
+                    if f.func_sig == func_sig and f.matches_context(
+                        msg.chain_id, address_bytes
+                    ):
+                        display_format = f
+
+    if display_format is None:
         return False
 
-    if not display_format.matches_context(msg.chain_id, address_bytes):
-        return False
+    if (
+        payment_request_verifier is not None
+        and display_format.func_sig != TRANSFER_DISPLAY_FORMAT.func_sig
+    ):
+        raise DataError("Payment Requests only supported for ERC-20 transfers.")
 
     calldata = memoryview(data)[SC_FUNC_SIG_BYTES:]
-    token = definitions.get_token(address_bytes)
 
     # custom treatment of certain functions (APPROVE, TRANSFER)
     if display_format.func_sig == APPROVE_DISPLAY_FORMAT.func_sig:
@@ -632,8 +869,7 @@ async def try_parse(
             display_format,
             address_bytes,
             msg,
-            definitions,
-            token,
+            defs,
             maximum_fee,
             fee_items,
         )
@@ -643,8 +879,7 @@ async def try_parse(
             display_format,
             address_bytes,
             msg,
-            definitions,
-            token,
+            defs,
             maximum_fee,
             fee_items,
             payment_request_verifier,
@@ -655,8 +890,7 @@ async def try_parse(
             calldata,
             display_format,
             msg,
-            definitions,
-            token,
+            defs,
             maximum_fee,
         )
     return True
@@ -667,34 +901,40 @@ async def _handle_approve(
     display_format: DisplayFormat,
     address_bytes: bytes,
     msg: MsgInSignTx,
-    definitions: Definitions,
-    token: EthereumTokenInfo,
+    defs: Definitions,
     maximum_fee: str,
     fee_items: Iterable[StrPropertyType],
 ) -> None:
     from .clear_signing_definitions import SC_FUNC_APPROVE_REVOKE_AMOUNT
     from .layout import require_confirm_approve
     from .sc_constants import KNOWN_ADDRESSES
+    from .yielding_vaults import UNKNOWN_VAULT, lookup_vault
 
-    args, fields = display_format.parse(
-        calldata, msg.address_n, msg.value, definitions, token
-    )
+    args, fields = await display_format.parse_calldata(calldata, msg, defs)
 
-    assert len(args) == 2
-    assert len(fields) == 2
+    if len(args) != 2 or len(fields) != 2:
+        raise InvalidFormatDefinition
 
     arg0_raw_value = args[0]
     (field0_name, recipient_addr, _), _, _ = fields[0]
-    assert field0_name == "Spender"
+    if field0_name != "Spender":
+        raise InvalidFormatDefinition
+
     assert isinstance(arg0_raw_value, bytes)
     assert isinstance(recipient_addr, str)
 
     arg1_raw_value = args[1]
-    (field1_name, value, _), _, _ = fields[1]
-    assert field1_name == "Amount"
+    (field1_name, value, _), actual_token, _ = fields[1]
+    if field1_name != "Amount":
+        raise InvalidFormatDefinition
+
     assert isinstance(arg1_raw_value, int)
 
     recipient_str = KNOWN_ADDRESSES.get(arg0_raw_value)
+    if recipient_str is None:
+        vault = lookup_vault(defs.network, arg0_raw_value)
+        if vault is not UNKNOWN_VAULT:
+            recipient_str = vault.name
 
     is_revoke = arg1_raw_value == SC_FUNC_APPROVE_REVOKE_AMOUNT
 
@@ -706,8 +946,8 @@ async def _handle_approve(
         maximum_fee,
         fee_items,
         msg.chain_id,
-        definitions.network,
-        token,
+        defs.network,
+        actual_token or defs.get_token(address_bytes),
         address_bytes,
         is_revoke,
         bool(msg.chunkify),
@@ -719,29 +959,30 @@ async def _handle_transfer(
     display_format: DisplayFormat,
     address_bytes: bytes,
     msg: MsgInSignTx,
-    definitions: Definitions,
-    token: EthereumTokenInfo,
+    defs: Definitions,
     maximum_fee: str,
     fee_items: Iterable[StrPropertyType],
     payment_request_verifier: PaymentRequestVerifier | None,
 ) -> None:
     from .layout import require_confirm_payment_request, require_confirm_tx
 
-    args, fields = display_format.parse(
-        calldata, msg.address_n, msg.value, definitions, token
-    )
+    args, fields = await display_format.parse_calldata(calldata, msg, defs)
 
-    assert len(args) == 2
-    assert len(fields) == 2
+    if len(args) != 2 or len(fields) != 2:
+        raise InvalidFormatDefinition
 
-    (arg0_name, recipient_addr, _), _, _ = fields[0]
-    assert arg0_name == "To"
+    (field0_name, recipient_addr, _), _, _ = fields[0]
+    if field0_name != "To":
+        raise InvalidFormatDefinition
+
     assert isinstance(recipient_addr, str)
 
     arg1_raw_value = args[1]
+    (field1_name, value, _), actual_token, _ = fields[1]
+    if field1_name != "Amount":
+        raise InvalidFormatDefinition
+
     assert isinstance(arg1_raw_value, int)
-    (arg1_name, value, _), _, _ = fields[1]
-    assert arg1_name == "Amount"
     assert isinstance(value, str)
 
     if payment_request_verifier:
@@ -758,9 +999,9 @@ async def _handle_transfer(
             maximum_fee,
             fee_items,
             msg.chain_id,
-            definitions.network,
-            token,
-            address_from_bytes(address_bytes, definitions.network),
+            defs.network,
+            actual_token or defs.get_token(address_bytes),
+            address_from_bytes(address_bytes, defs.network),
         )
     else:
         await require_confirm_tx(
@@ -770,7 +1011,7 @@ async def _handle_transfer(
             msg.address_n,
             maximum_fee,
             fee_items,
-            token,
+            actual_token or defs.get_token(address_bytes),
             is_send=True,
             chunkify=bool(msg.chunkify),
         )
@@ -780,28 +1021,27 @@ async def _handle_generic_ui(
     calldata: memoryview,
     display_format: DisplayFormat,
     msg: MsgInSignTx,
-    definitions: Definitions,
-    token: EthereumTokenInfo,
+    defs: Definitions,
     maximum_fee: str,
 ) -> None:
+    from trezor.ui.layouts.properties import AboveThreshold
+
     from . import tokens
     from .helpers import bytes_from_address
     from .layout import require_confirm_clear_signing
     from .sc_constants import KNOWN_ADDRESSES
 
-    _, fields = display_format.parse(
-        calldata, msg.address_n, msg.value, definitions, token
-    )
+    _, fields = await display_format.parse_calldata(calldata, msg, defs)
 
     properties_to_confirm = []
 
-    for field, actual_token, actual_token_address in fields:
-        properties_to_confirm.append(field)
+    for (label, formatted, hint), actual_token, actual_token_address in fields:
+        if isinstance(formatted, AboveThreshold):
+            formatted = formatted.message
+        properties_to_confirm.append((label, formatted, hint))
         if actual_token is tokens.UNKNOWN_TOKEN:
             assert actual_token_address is not None
-            token_address_str = address_from_bytes(
-                actual_token_address, definitions.network
-            )
+            token_address_str = address_from_bytes(actual_token_address, defs.network)
             token_address_property: StrPropertyType = (
                 TR.ethereum__token_contract,
                 token_address_str,

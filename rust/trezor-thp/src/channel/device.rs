@@ -1,10 +1,11 @@
 use heapless;
 
 use crate::{
-    Backend, Channel, ChannelIO, Device, Error,
+    Backend, ChannelIO, Device, Error,
     alternating_bit::SyncBits,
     channel::{
-        ChannelState, Nonce, PRIVKEY_LEN, PacketInResult, PairingState, noise::NoiseHandshake,
+        HANDSHAKE_BUFFER_DTH_LEN, HANDSHAKE_BUFFER_HTD_LEN, Nonce, PRIVKEY_LEN, PacketInResult,
+        PairingState, ReceiveState, SendState, noise::NoiseHandshake,
     },
     credential::CredentialVerifier,
     error::TransportError,
@@ -16,13 +17,11 @@ use crate::{
     util::prepare_zeroed,
 };
 
-use core::marker::PhantomData;
+use core::{
+    marker::PhantomData,
+    sync::atomic::{AtomicU16, Ordering},
+};
 
-// Must fit any of:
-// - device_properties + overhead
-// - 2 DH keys + 2 AEAD tags (2*32+2*16=96) + overhead
-// - DH key + credential + 2 AEAD tags + overhead
-const INTERNAL_BUFFER_LEN: usize = 192;
 // As long as `packet_out` is called soon after `packet_in` there shouldn't be an accumulation
 // of outgoing messages. However there still can be >1 during normal operation, e.g. when we're
 // responding to PING at the same time the application requests sending an error.
@@ -30,16 +29,15 @@ const BROADCAST_OUTGOING_QUEUE_LEN: usize = 8;
 // "?##" + Failure message type + msg_size + msg_data (code = "Failure_InvalidProtocol")
 const CODEC_V1_RESPONSE: &[u8] = b"?##\x00\x03\x00\x00\x00\x02\x08\x11";
 
+pub type Channel<B> = super::Channel<Device, B>;
+
 /// Maps packets to channels. Handles broadcast channel messages, notably channel allocation.
 /// Every packet interface on the device needs to have one Mux. Event loop should pass every
 /// incoming packet to [`Mux::packet_in`] in order to determine what to do with it.
 /// Single packet only. Does not keep track of opened channels.
-pub struct Mux<C, B> {
-    // is_locked: bool,
-    next_channel_id: u16,
-    cred_verif: C,
+pub struct Mux<B> {
     outgoing: heapless::Deque<MuxOutgoing, BROADCAST_OUTGOING_QUEUE_LEN>,
-    new_channel: Option<(u16, Nonce)>,
+    new_channel: Option<Nonce>,
     _phantom: PhantomData<B>,
 }
 
@@ -59,29 +57,39 @@ impl MuxOutgoing {
     }
 }
 
-impl<C, B> Mux<C, B>
+impl<B> Mux<B>
 where
-    C: CredentialVerifier,
     B: Backend,
 {
-    pub fn new(cred_verif: C) -> Self {
-        // Use random starting id to avoid giving out the number of channels allocated since boot.
-        let next_channel_id = random_channel_id::<B>();
+    pub const fn new() -> Self {
         Self {
-            next_channel_id,
-            cred_verif,
             outgoing: heapless::Deque::new(),
             new_channel: None,
             _phantom: PhantomData,
         }
     }
 
+    /// Reset everything to initial state - discard outgoing messages and channel allocation.
+    pub fn reset(&mut self) {
+        *self = Self::new()
+    }
+
     /// Create new [`ChannelOpen`] when channel allocation request is pending.
-    pub fn channel_alloc(&mut self) -> Result<ChannelOpen<C, B>, Error> {
-        let Some((channel_id, nonce)) = self.new_channel.take() else {
+    pub fn channel_alloc<C>(
+        &mut self,
+        channel_id: u16,
+        cred_verif: C,
+    ) -> Result<ChannelOpen<C, B>, Error>
+    where
+        C: CredentialVerifier,
+    {
+        if !channel_id_valid(channel_id) || channel_id == BROADCAST_CHANNEL_ID {
+            return Err(Error::unexpected_input());
+        }
+        let Some(nonce) = self.new_channel.take() else {
             return Err(Error::not_ready());
         };
-        ChannelOpen::<C, B>::new(channel_id, nonce, self.cred_verif.clone())
+        ChannelOpen::<C, B>::new(channel_id, nonce, cred_verif)
     }
 
     /// Returns `true` if there is channel allocation request pending.
@@ -118,31 +126,26 @@ where
         })
     }
 
-    fn handle_broadcast(&mut self, packet: &[u8]) -> Result<Option<u16>, Error> {
-        let (header, payload) = Reassembler::<Device>::single_inplace(packet)?;
+    // Returns true if allocation request has been received.
+    fn handle_broadcast(&mut self, packet: &[u8]) -> Result<bool, Error> {
+        let (header, payload) = Reassembler::<Device>::single(packet)?;
         match header {
             Header::Ping if payload.len() == Nonce::LEN => {
-                let (nonce, _rest) = Nonce::parse(payload).unwrap();
-                self.enqueue(MuxOutgoing::Pong(nonce)).map(|_| None)
+                let (nonce, _rest) = Nonce::parse(payload)?;
+                self.enqueue(MuxOutgoing::Pong(nonce)).map(|_| false)
             }
             Header::ChannelAllocationRequest if payload.len() == Nonce::LEN => {
                 let (nonce, _rest) = Nonce::parse(payload)?;
-                let channel_id = self.next_channel_id;
-                self.next_channel_id += 1;
-                if self.next_channel_id > MAX_CHANNEL_ID {
-                    log::debug!("Channel id max value reached, wrapping around.");
-                    self.next_channel_id = MIN_CHANNEL_ID;
-                }
                 if self.new_channel.is_some() {
                     log::warn!("Dropping previous channel allocation request.");
                 }
-                self.new_channel = Some((channel_id, nonce));
-                Ok(Some(channel_id))
+                self.new_channel = Some(nonce);
+                Ok(true)
             }
             // No Header::TransportError for broadcast.
             _ => {
                 log::debug!(
-                    "Broadcast channel: ignoring packet with control byte {}.",
+                    "Broadcast channel: ignoring packet with control byte 0x{:x}.",
                     packet[0]
                 );
                 Err(Error::malformed_data())
@@ -172,17 +175,19 @@ where
         };
         PacketInResult::ignore(Error::malformed_data())
     }
+}
 
-    #[cfg(test)]
-    pub(crate) fn set_next_channel_id(&mut self, channel_id: u16) {
-        assert!(channel_id_valid(channel_id));
-        self.next_channel_id = channel_id;
+impl<B> Default for Mux<B>
+where
+    B: Backend,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 
-impl<C, B> ChannelIO for Mux<C, B>
+impl<B> ChannelIO for Mux<B>
 where
-    C: CredentialVerifier,
     B: Backend,
 {
     fn packet_in(&mut self, packet_buffer: &[u8], _receive_buffer: &mut [u8]) -> PacketInResult {
@@ -194,17 +199,18 @@ where
             return self.handle_v1(packet_buffer);
         }
         if !channel_id_valid(channel_id) {
-            log::warn!("Invalid channel id {}.", channel_id);
+            log::warn!("Invalid channel id {:04x}.", channel_id);
             return PacketInResult::ignore(Error::malformed_data());
         }
         if channel_id != BROADCAST_CHANNEL_ID {
             return PacketInResult::route(channel_id);
         }
-        PacketInResult::from_result(self.handle_broadcast(packet_buffer).map(|r| {
-            r.map_or_else(
-                || PacketInResult::accept(false),
-                PacketInResult::channel_allocation,
-            )
+        PacketInResult::from_result(self.handle_broadcast(packet_buffer).map(|is_allocation| {
+            if is_allocation {
+                PacketInResult::channel_allocation()
+            } else {
+                PacketInResult::accept(false)
+            }
         }))
     }
 
@@ -282,48 +288,56 @@ enum HandshakeState {
 /// Please note that this object also handles sending ChannelAllocationResponse
 /// which is a broadcast message, which are normally handled by [`Mux`].
 pub struct ChannelOpen<C: CredentialVerifier, B: Backend> {
-    channel: Channel<Device, B>,
+    channel: Channel<B>,
     state: HandshakeState,
     noise: NoiseHandshake<Device, B>,
-    internal_buffer: heapless::Vec<u8, INTERNAL_BUFFER_LEN>,
+    send_buffer: heapless::Vec<u8, HANDSHAKE_BUFFER_DTH_LEN>,
+    receive_buffer: heapless::Vec<u8, HANDSHAKE_BUFFER_HTD_LEN>,
     cred_verif: C,
 }
 
 impl<C: CredentialVerifier, B: Backend> ChannelOpen<C, B> {
     fn new(channel_id: u16, nonce: Nonce, cred_verif: C) -> Result<Self, Error> {
-        let mut internal_buffer = heapless::Vec::new();
-        internal_buffer
+        let mut send_buffer = heapless::Vec::new();
+        send_buffer
             .extend_from_slice(nonce.as_slice())
             .map_err(|_| Error::insufficient_buffer())?;
-        internal_buffer
+        send_buffer
             .extend_from_slice(&channel_id.to_be_bytes())
             .map_err(|_| Error::insufficient_buffer())?;
-        internal_buffer
+        send_buffer
             .extend_from_slice(cred_verif.device_properties())
             .map_err(|_| Error::insufficient_buffer())?;
+        let mut receive_buffer = heapless::Vec::new();
+        prepare_zeroed(&mut receive_buffer);
 
         // Sending `channel_allocation_response` on broadcast channel.
         let mut channel = Channel::new(channel_id);
-        channel.raw_in(
-            Header::new_channel_response(&internal_buffer)?,
-            &internal_buffer,
-        )?;
+        channel.raw_in(Header::new_channel_response(&send_buffer)?, &send_buffer)?;
         Ok(Self {
             channel,
             state: HandshakeState::SendingChannelResponse,
             noise: NoiseHandshake::prepare_responder(cred_verif.device_properties()),
-            internal_buffer,
+            send_buffer,
+            receive_buffer,
             cred_verif,
         })
     }
 
     fn incoming_internal(&mut self) -> Result<(), Error> {
-        let (header, len) = self.channel.raw_out(&self.internal_buffer)?;
-        self.internal_buffer.truncate(len);
+        let ReceiveState::Receiving { reassembler, .. } = &self.channel.receive_state else {
+            return Err(Error::not_ready());
+        };
+        let sync_bits = reassembler.sync_bits();
+
+        let (header, len) = self.channel.raw_out(&self.receive_buffer)?;
+        self.receive_buffer.truncate(len);
 
         match (self.state, header.handshake_phase()) {
             (HandshakeState::SendingChannelResponse, Some(HandshakeMessage::InitiationRequest)) => {
-                let try_to_unlock = self.noise.read_initiation_request(&self.internal_buffer)?;
+                // enable ACK piggybacking if requested
+                self.enable_ack_piggybacking_if_requested(sync_bits);
+                let try_to_unlock = self.noise.read_initiation_request(&self.receive_buffer)?;
                 self.state = HandshakeState::StaticKeyRequired { try_to_unlock };
             }
             (
@@ -334,70 +348,66 @@ impl<C: CredentialVerifier, B: Backend> ChannelOpen<C, B> {
                 self.state = HandshakeState::SendingCompletionResponse { pairing_state };
             }
             _ => {
-                log::error!("[{}] Unexpected handshake state.", self.channel_id());
+                log::error!("[{:04x}] Unexpected handshake state.", self.channel_id());
                 return Err(Error::unexpected_input());
             }
         }
+        prepare_zeroed(&mut self.receive_buffer);
         Ok(())
+    }
+
+    fn enable_ack_piggybacking_if_requested(&mut self, sync_bits: SyncBits) {
+        if sync_bits.ack_bit() {
+            self.channel.sync.allow_ack_piggybacking();
+        }
     }
 
     fn send_initiation_response(
         &mut self,
         static_privkey: &[u8; PRIVKEY_LEN],
     ) -> Result<(), Error> {
-        prepare_zeroed(&mut self.internal_buffer);
-        let msg = self
+        prepare_zeroed(&mut self.send_buffer);
+        let len = self
             .noise
-            .write_initiation_response(static_privkey, &mut self.internal_buffer)?;
+            .write_initiation_response(static_privkey, &mut self.send_buffer)?;
+        self.send_buffer.truncate(len);
         let header = Header::new_handshake(
             self.channel.channel_id,
             HandshakeMessage::InitiationResponse,
-            msg,
+            &self.send_buffer,
         )?;
-        self.channel.raw_in(header, msg)?;
-        let len = msg.len();
-        self.internal_buffer.truncate(len);
+        self.channel.raw_in(header, &self.send_buffer)?;
         Ok(())
     }
 
     fn send_completion_response(&mut self) -> Result<PairingState, Error> {
-        let payload = self.internal_buffer.clone();
-        prepare_zeroed(&mut self.internal_buffer);
-        let (nc, ps, msg) = self.noise.write_completion_response(
-            &payload,
+        prepare_zeroed(&mut self.send_buffer);
+        let (nc, ps, len) = self.noise.write_completion_response(
+            &self.receive_buffer,
             &self.cred_verif,
-            &mut self.internal_buffer,
+            &mut self.send_buffer,
         )?;
+        self.send_buffer.truncate(len);
         self.channel.noise = Some(nc);
         let header = Header::new_handshake(
             self.channel.channel_id,
             HandshakeMessage::CompletionResponse,
-            msg,
+            &self.send_buffer,
         )?;
-        self.channel.raw_in(header, msg)?;
-        let len = msg.len();
-        self.internal_buffer.truncate(len);
+        self.channel.raw_in(header, &self.send_buffer)?;
         Ok(ps)
-    }
-
-    pub fn pairing_state(&self) -> Option<PairingState> {
-        match self.state {
-            HandshakeState::SendingCompletionResponse { pairing_state } => Some(pairing_state),
-            _ => None,
-        }
     }
 
     /// True if handshake finished and [`ChannelOpen::complete()`] can be called.
     pub fn handshake_done(&self) -> bool {
         // Done only after peer acknowledges completion response.
         matches!(self.state, HandshakeState::SendingCompletionResponse { .. })
-            && matches!(self.channel.state, ChannelState::Idle)
+            && matches!(self.channel.send_state, SendState::Idle)
     }
 
     /// True if the handshake failed and the object should be discarded.
     pub fn handshake_failed(&self) -> bool {
-        matches!(self.state, HandshakeState::Failed)
-            || matches!(self.channel.state, ChannelState::Failed(_))
+        matches!(self.state, HandshakeState::Failed) || self.channel.is_failed()
     }
 
     /// True if the handshake is waiting for device static key to be supplied using
@@ -418,13 +428,19 @@ impl<C: CredentialVerifier, B: Backend> ChannelOpen<C, B> {
     ///
     /// [Pairing phase]: https://docs.trezor.io/trezor-firmware/common/thp/specification.html#pairing-phase
     /// [Credential phase]: https://docs.trezor.io/trezor-firmware/common/thp/specification.html#credential-phase
-    pub fn complete(self) -> Result<Channel<Device, B>, Error> {
+    pub fn complete(mut self) -> Result<Channel<B>, Error> {
         if self.channel.noise.is_none() {
             return Err(Error::unexpected_input());
         }
-        log::debug!("Handshake complete.");
+        if !self.handshake_done() {
+            return Err(Error::not_ready());
+        }
+        log::debug!("[{:04x}] Handshake complete.", self.channel_id());
         Ok(match self.state {
-            HandshakeState::SendingCompletionResponse { .. } => self.channel,
+            HandshakeState::SendingCompletionResponse { pairing_state } => {
+                self.channel.pairing_state = pairing_state;
+                self.channel
+            }
             _ => return Err(Error::unexpected_input()),
         })
     }
@@ -433,17 +449,16 @@ impl<C: CredentialVerifier, B: Backend> ChannelOpen<C, B> {
         self.channel.channel_id
     }
 
+    pub fn sending_retry(&self) -> Option<u8> {
+        self.channel.sending_retry()
+    }
+
     /// Notify host that handshake cannot proceed because device static key is not available.
     pub fn send_device_locked(&mut self) -> Result<(), Error> {
         if !self.static_key_required() {
             return Err(Error::not_ready());
         }
-        let header = Header::new_error(self.channel.channel_id)?;
-        self.internal_buffer.clear();
-        let _ = self
-            .internal_buffer
-            .push(TransportError::DeviceLocked.into());
-        self.channel.raw_in(header, &self.internal_buffer)?;
+        self.channel.send_error(TransportError::DeviceLocked);
         self.state = HandshakeState::SendingDeviceLocked;
         Ok(())
     }
@@ -458,6 +473,10 @@ impl<C: CredentialVerifier, B: Backend> ChannelOpen<C, B> {
         self.state = HandshakeState::SendingInitiationResponse;
         Ok(())
     }
+
+    pub fn credential_verifier(&mut self) -> &mut C {
+        &mut self.cred_verif
+    }
 }
 
 impl<C, B> ChannelIO for ChannelOpen<C, B>
@@ -468,23 +487,20 @@ where
     fn packet_in(&mut self, packet_buffer: &[u8], _receive_buffer: &mut [u8]) -> PacketInResult {
         let res = self
             .channel
-            .packet_in(packet_buffer, &mut self.internal_buffer);
-        if let PacketInResult::EnlargeBuffer { buffer_size, .. } = res {
+            .packet_in(packet_buffer, &mut self.receive_buffer);
+        if let PacketInResult::Accepted {
+            buffer_size: Some(s),
+            ..
+        } = res
+        {
             log::error!(
-                "[{}] Payload length {} exceeds handshake limit.",
+                "[{:04x}] Payload length {} exceeds handshake limit.",
                 self.channel_id(),
-                buffer_size
+                s
             );
             // Possibly damaged length field, ignore continuations.
-            self.channel.state = ChannelState::Idle;
+            self.channel.receive_state = ReceiveState::Idle;
             return PacketInResult::ignore(Error::malformed_data());
-        }
-        if res.got_ack() {
-            if matches!(self.state, HandshakeState::SendingDeviceLocked) {
-                self.state = HandshakeState::Failed;
-                return res;
-            }
-            prepare_zeroed(&mut self.internal_buffer);
         }
         if res.got_message() {
             let handled = self.incoming_internal();
@@ -504,15 +520,7 @@ where
     }
 
     fn packet_out(&mut self, packet_buffer: &mut [u8], _send_buffer: &[u8]) -> Result<(), Error> {
-        self.channel
-            .packet_out(packet_buffer, &self.internal_buffer)?;
-        // Do not wait for ack - `channel_allocation_response` is sent over broadcast channel.
-        if matches!(self.state, HandshakeState::SendingChannelResponse)
-            && matches!(self.channel.state, ChannelState::Idle)
-        {
-            prepare_zeroed(&mut self.internal_buffer);
-        }
-        Ok(())
+        self.channel.packet_out(packet_buffer, &self.send_buffer)
     }
 
     fn packet_out_ready(&self) -> bool {
@@ -543,14 +551,39 @@ where
     }
 }
 
-fn random_channel_id<B: Backend>() -> u16 {
-    let mut bytes = [0u8, 0u8];
-    for _i in 0..16 {
+/// Helper for assigning consecutive channel IDs.
+pub struct ChannelIdAllocator {
+    // Next value. Not guaranteed to be valid channel id, these are skipped
+    // in `ChannelIdAllocator::get()` until a valid one is found.
+    counter: AtomicU16,
+}
+
+impl ChannelIdAllocator {
+    /// Use random starting id to avoid giving out the number of channels allocated since boot.
+    pub fn new_random<B: Backend>() -> Self {
+        let mut bytes = [0u8, 0u8];
         B::random_bytes(&mut bytes);
-        let channel_id = u16::from_be_bytes(bytes);
-        if channel_id_valid(channel_id) && channel_id != BROADCAST_CHANNEL_ID {
-            return channel_id;
+        Self::new_from(u16::from_be_bytes(bytes))
+    }
+
+    /// Use fixed starting id, mainly useful for tests.
+    /// Please note [`ChannelIdAllocator::get()`] skips invalid values so the first result
+    /// is not necessarily the argument passed to this constructor.
+    pub const fn new_from(init_val: u16) -> Self {
+        Self {
+            counter: AtomicU16::new(init_val),
         }
     }
-    panic!("Cannot generate random channel id.");
+
+    /// Get next ID. Wraps around to `MIN_CHANNEL_ID`.
+    /// If the caller has multiple channels it needs to check whether the returned
+    /// ID is not currently in use.
+    pub fn get(&self) -> u16 {
+        loop {
+            let channel_id = self.counter.fetch_add(1, Ordering::Relaxed);
+            if (MIN_CHANNEL_ID..=MAX_CHANNEL_ID).contains(&channel_id) {
+                return channel_id;
+            }
+        }
+    }
 }

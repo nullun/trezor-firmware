@@ -1,8 +1,6 @@
 from micropython import const
 from ubinascii import unhexlify
 
-from trezor.crypto import base58
-
 from .clear_signing import (
     AddressNameFormatter,
     AmountFormatter,
@@ -13,8 +11,8 @@ from .clear_signing import (
     DisplayFormat,
     Dynamic,
     FieldDefinition,
-    Struct,
     TokenAmountFormatter,
+    Tuple,
     UnitFormatter,
     parse_address,
     parse_bool,
@@ -29,7 +27,7 @@ from .clear_signing import (
 
 APPROVE_DISPLAY_FORMAT = DisplayFormat(
     binding_context=None,
-    func_sig=base58.keccak_32(b"approve(address,uint256)"),
+    func_sig=b"\x09\x5e\xa7\xb3",  # approve(address,uint256)
     intent="Approve",
     parameter_definitions=[
         Atomic(parse_address),  # _spender
@@ -41,7 +39,8 @@ APPROVE_DISPLAY_FORMAT = DisplayFormat(
             (1,),
             "Amount",
             TokenAmountFormatter(
-                threshold=0x8000000000000000000000000000000000000000000000000000000000000000
+                token_path=ContainerPath.To,
+                threshold=0x8000000000000000000000000000000000000000000000000000000000000000,
             ),
         ),
     ],
@@ -50,7 +49,7 @@ SC_FUNC_APPROVE_REVOKE_AMOUNT = const(0)
 
 TRANSFER_DISPLAY_FORMAT = DisplayFormat(
     binding_context=None,
-    func_sig=base58.keccak_32(b"transfer(address,uint256)"),
+    func_sig=b"\xa9\x05\x9c\xbb",  # transfer(address,uint256)
     intent="Send",
     parameter_definitions=[
         Atomic(parse_address),  # _to
@@ -58,9 +57,21 @@ TRANSFER_DISPLAY_FORMAT = DisplayFormat(
     ],
     field_definitions=[
         FieldDefinition((0,), "To", AddressNameFormatter),
-        FieldDefinition((1,), "Amount", TokenAmountFormatter),
+        FieldDefinition(
+            (1,), "Amount", TokenAmountFormatter(token_path=ContainerPath.To)
+        ),
     ],
 )
+
+if __debug__:
+    from trezor.crypto import base58
+
+    assert APPROVE_DISPLAY_FORMAT.func_sig == base58.keccak_32(
+        b"approve(address,uint256)"
+    )
+    assert TRANSFER_DISPLAY_FORMAT.func_sig == base58.keccak_32(
+        b"transfer(address,uint256)"
+    )
 
 ALL_DISPLAY_FORMATS = [APPROVE_DISPLAY_FORMAT, TRANSFER_DISPLAY_FORMAT]
 
@@ -142,7 +153,7 @@ ALL_DISPLAY_FORMATS.extend(
                 Atomic(parse_address),  # _receiver
                 Atomic(parse_uint256),  # _minAmountOut
                 Array(
-                    Struct(
+                    Tuple(
                         (
                             parse_address,  # callTo
                             parse_address,  # approveTo
@@ -191,7 +202,7 @@ ALL_DISPLAY_FORMATS.extend(
                 Atomic(parse_address),  # _receiver
                 Atomic(parse_uint256),  # _minAmountOut
                 Array(
-                    Struct(
+                    Tuple(
                         (
                             parse_address,  # callTo
                             parse_address,  # approveTo
@@ -238,7 +249,7 @@ ALL_DISPLAY_FORMATS.extend(
                 Atomic(parse_address),  # _receiver
                 Atomic(parse_uint256),  # _minAmountOut
                 Array(
-                    Struct(
+                    Tuple(
                         (
                             parse_address,  # callTo
                             parse_address,  # approveTo
@@ -284,7 +295,7 @@ ALL_DISPLAY_FORMATS.extend(
                 Dynamic(parse_string),  # _referrer
                 Atomic(parse_address),  # _receiver
                 Atomic(parse_uint256),  # _minAmountOut
-                Struct(
+                Tuple(
                     (
                         parse_address,  # callTo
                         parse_address,  # approveTo
@@ -329,7 +340,7 @@ ALL_DISPLAY_FORMATS.extend(
                 Dynamic(parse_string),  # _referrer
                 Atomic(parse_address),  # _receiver
                 Atomic(parse_uint256),  # _minAmountOut
-                Struct(
+                Tuple(
                     (
                         parse_address,  # callTo
                         parse_address,  # approveTo
@@ -374,7 +385,7 @@ ALL_DISPLAY_FORMATS.extend(
                 Dynamic(parse_string),  # _referrer
                 Atomic(parse_address),  # _receiver
                 Atomic(parse_uint256),  # _minAmountOut
-                Struct(
+                Tuple(
                     (
                         parse_address,  # callTo
                         parse_address,  # approveTo
@@ -420,7 +431,7 @@ ALL_DISPLAY_FORMATS.extend(
                 Atomic(parse_address),  # _receiver
                 Atomic(parse_uint256),  # _minAmount
                 Array(
-                    Struct(
+                    Tuple(
                         (
                             parse_address,  # callTo
                             parse_address,  # approveTo
@@ -482,7 +493,7 @@ ALL_DISPLAY_FORMATS.extend(
             func_sig=unhexlify("b858183f"),  # exactInput(tuple params)
             intent="Swap",
             parameter_definitions=[
-                Struct(
+                Tuple(
                     (
                         parse_bytes,  # path
                         parse_address,  # recipient
@@ -519,7 +530,7 @@ ALL_DISPLAY_FORMATS.extend(
             func_sig=unhexlify("04e45aaf"),  # exactInputSingle(tuple params)
             intent="Swap",
             parameter_definitions=[
-                Struct(
+                Tuple(
                     (
                         parse_address,  # tokenIn
                         parse_address,  # tokenOut
@@ -564,7 +575,7 @@ ALL_DISPLAY_FORMATS.extend(
             func_sig=unhexlify("09b81346"),  # exactOutput(tuple params)
             intent="Swap",
             parameter_definitions=[
-                Struct(
+                Tuple(
                     (
                         parse_bytes,  # path
                         parse_address,  # recipient
@@ -601,7 +612,7 @@ ALL_DISPLAY_FORMATS.extend(
             func_sig=unhexlify("5023b4df"),  # exactOutputSingle(tuple params)
             intent="Swap",
             parameter_definitions=[
-                Struct(
+                Tuple(
                     (
                         parse_address,  # tokenIn
                         parse_address,  # tokenOut

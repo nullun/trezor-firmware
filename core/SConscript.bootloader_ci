@@ -5,6 +5,7 @@ import tools, models, ui
 
 TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T2T1')
 CMAKELISTS = int(ARGUMENTS.get('CMAKELISTS', 0))
+BOOTLOADER_DEVEL = ARGUMENTS.get('BOOTLOADER_DEVEL', '0') == '1'
 PRODUCTION = ARGUMENTS.get('PRODUCTION', '0') == '1'
 HW_REVISION = ARGUMENTS.get('HW_REVISION', None)
 
@@ -34,7 +35,7 @@ RUST_UI_FEATURES = []
 
 env = Environment(
     ENV=os.environ,
-    CFLAGS='%s -DPRODUCTION=%s' % (ARGUMENTS.get('CFLAGS', ''), ARGUMENTS.get('PRODUCTION', '0')),
+    CFLAGS=f"{ARGUMENTS.get('CFLAGS', '')} -DPRODUCTION={int(PRODUCTION)} -DBOOTLOADER_DEVEL={int(BOOTLOADER_DEVEL)}",
     CPPDEFINES_IMPLICIT=[],
     CPPDEFPREFIX="-D'",
     CPPDEFSUFFIX="'",
@@ -128,10 +129,20 @@ SOURCE_BOOTLOADER = [
     'embed/projects/bootloader_ci/version_check.c',
 ]
 
-if not "boot_ucb" in FEATURES_AVAILABLE:
+if "boot_ucb" in FEATURES_AVAILABLE:
+    SOURCE_BOOTLOADER += [
+        'embed/projects/bootloader/header_pq.c',
+    ]
+    env.Replace(
+        HEADERTOOL='headertool_pq',
+    )
+else:
     SOURCE_BOOTLOADER += [
         'embed/projects/bootloader/header.S',
     ]
+    env.Replace(
+        HEADERTOOL='headertool',
+    )
 
 env.Replace(
     CAT='cat',
@@ -187,10 +198,6 @@ env.Replace(
     ALLSOURCES=SOURCE_MOD + SOURCE_MOD_CRYPTO + SOURCE_BOOTLOADER + SOURCE_HAL+ SOURCE_NANOPB, )
 
 env.Replace(
-    HEADERTOOL='headertool',
-)
-
-env.Replace(
     ALLSOURCES=SOURCE_MOD + SOURCE_MOD_CRYPTO + SOURCE_BOOTLOADER + SOURCE_NANOPB + SOURCE_HAL,
     ALLDEFS=tools.get_defs_for_cmake(env['CPPDEFINES'] + env['CPPDEFINES_IMPLICIT']))
 
@@ -227,7 +234,7 @@ program_elf = env.Command(
     target='bootloader.elf',
     source=obj_program,
     action=
-    '$LINK -o $TARGET $CCFLAGS $CFLAGS $LINKFLAGS $SOURCES -lc_nano -lgcc',
+    '$LINK -o $TARGET $CCFLAGS $CFLAGS $LINKFLAGS $SOURCES -lc_nano -lgcc -lm',
 )
 
 env.Depends(program_elf, linkerscript_gen)
@@ -246,6 +253,6 @@ program_bin = env.Command(
     source=program_elf,
     action=[
         '$OBJCOPY -O binary -j .header -j .flash -j .data $SOURCE $TARGET',
-        '$HEADERTOOL $TARGET ' + ('-D' if ARGUMENTS.get('PRODUCTION', '0') == '0' else ''),
+        '$HEADERTOOL $TARGET ' + ('-D' if BOOTLOADER_DEVEL else ''),
         '$CP $TARGET ' + BINARY_NAME,
     ], )

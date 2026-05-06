@@ -24,6 +24,7 @@
 #include <io/rsod.h>
 #include <sec/board_capabilities.h>
 #include <sec/option_bytes.h>
+#include <sec/rsod_special.h>
 #include <sys/bootutils.h>
 #include <sys/flash.h>
 #include <sys/flash_utils.h>
@@ -64,6 +65,10 @@
 
 #ifdef USE_SD_CARD
 #include "sd_update.h"
+#endif
+
+#ifdef USE_TRUSTZONE
+#include <sec/tz_init.h>
 #endif
 
 static void drivers_init(void) {
@@ -304,6 +309,10 @@ static inline void ensure_signed_bootloader(
 #endif
 
 int main(void) {
+#ifdef USE_TRUSTZONE
+  tz_init();
+#endif
+
   // Initialize system's core services
   system_init(&rsod_panic_handler);
 

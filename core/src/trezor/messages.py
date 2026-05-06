@@ -44,7 +44,10 @@ if TYPE_CHECKING:
     from trezor.enums import DecredStakingSpendType  # noqa: F401
     from trezor.enums import DefinitionType  # noqa: F401
     from trezor.enums import DisplayRotation  # noqa: F401
+    from trezor.enums import EthereumABIType  # noqa: F401
     from trezor.enums import EthereumDataType  # noqa: F401
+    from trezor.enums import EthereumERC7730ContainerPath  # noqa: F401
+    from trezor.enums import EthereumERC7730FieldFormatterType  # noqa: F401
     from trezor.enums import FailureType  # noqa: F401
     from trezor.enums import HomescreenFormat  # noqa: F401
     from trezor.enums import InputScriptType  # noqa: F401
@@ -2631,6 +2634,8 @@ if TYPE_CHECKING:
         optiga_signature: "AnyBytes"
         tropic_certificates: "list[AnyBytes]"
         tropic_signature: "AnyBytes | None"
+        mcu_certificates: "list[AnyBytes]"
+        mcu_signature: "AnyBytes | None"
 
         def __init__(
             self,
@@ -2638,7 +2643,9 @@ if TYPE_CHECKING:
             optiga_signature: "AnyBytes",
             optiga_certificates: "list[AnyBytes] | None" = None,
             tropic_certificates: "list[AnyBytes] | None" = None,
+            mcu_certificates: "list[AnyBytes] | None" = None,
             tropic_signature: "AnyBytes | None" = None,
+            mcu_signature: "AnyBytes | None" = None,
         ) -> None:
             pass
 
@@ -3272,6 +3279,32 @@ if TYPE_CHECKING:
         def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkEraseSdCard"]:
             return isinstance(msg, cls)
 
+    class DebugLinkSetBatteryState(protobuf.MessageType):
+        soc: "int | None"
+        usb_connected: "bool | None"
+        wireless_connected: "bool | None"
+        ntc_connected: "bool | None"
+        charging_limited: "bool | None"
+        temp_control_active: "bool | None"
+        battery_connected: "bool | None"
+
+        def __init__(
+            self,
+            *,
+            soc: "int | None" = None,
+            usb_connected: "bool | None" = None,
+            wireless_connected: "bool | None" = None,
+            ntc_connected: "bool | None" = None,
+            charging_limited: "bool | None" = None,
+            temp_control_active: "bool | None" = None,
+            battery_connected: "bool | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkSetBatteryState"]:
+            return isinstance(msg, cls)
+
     class DebugLinkOptigaSetSecMax(protobuf.MessageType):
 
         @classmethod
@@ -3436,6 +3469,110 @@ if TYPE_CHECKING:
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["SolanaTokenInfo"]:
+            return isinstance(msg, cls)
+
+    class EthereumABITupleInfo(protobuf.MessageType):
+        fields: "list[EthereumABIValueInfo]"
+        is_dynamic: "bool"
+
+        def __init__(
+            self,
+            *,
+            is_dynamic: "bool",
+            fields: "list[EthereumABIValueInfo] | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["EthereumABITupleInfo"]:
+            return isinstance(msg, cls)
+
+    class EthereumABIValueInfo(protobuf.MessageType):
+        atomic: "EthereumABIType | None"
+        dynamic: "EthereumABIType | None"
+        tuple: "EthereumABITupleInfo | None"
+        array: "EthereumABIValueInfo | None"
+
+        def __init__(
+            self,
+            *,
+            atomic: "EthereumABIType | None" = None,
+            dynamic: "EthereumABIType | None" = None,
+            tuple: "EthereumABITupleInfo | None" = None,
+            array: "EthereumABIValueInfo | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["EthereumABIValueInfo"]:
+            return isinstance(msg, cls)
+
+    class EthereumERC7730Path(protobuf.MessageType):
+        path: "list[int]"
+        container_path: "EthereumERC7730ContainerPath | None"
+
+        def __init__(
+            self,
+            *,
+            path: "list[int] | None" = None,
+            container_path: "EthereumERC7730ContainerPath | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["EthereumERC7730Path"]:
+            return isinstance(msg, cls)
+
+    class EthereumERC7730FieldInfo(protobuf.MessageType):
+        path: "EthereumERC7730Path"
+        label: "str"
+        formatter: "EthereumERC7730FieldFormatterType"
+        token_path: "EthereumERC7730Path | None"
+        threshold: "AnyBytes | None"
+        decimals: "int | None"
+        base: "str | None"
+        prefix: "bool | None"
+
+        def __init__(
+            self,
+            *,
+            path: "EthereumERC7730Path",
+            label: "str",
+            formatter: "EthereumERC7730FieldFormatterType",
+            token_path: "EthereumERC7730Path | None" = None,
+            threshold: "AnyBytes | None" = None,
+            decimals: "int | None" = None,
+            base: "str | None" = None,
+            prefix: "bool | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["EthereumERC7730FieldInfo"]:
+            return isinstance(msg, cls)
+
+    class EthereumDisplayFormatInfo(protobuf.MessageType):
+        chain_id: "int"
+        address: "AnyBytes"
+        func_sig: "AnyBytes"
+        intent: "str"
+        parameter_definitions: "list[EthereumABIValueInfo]"
+        field_definitions: "list[EthereumERC7730FieldInfo]"
+
+        def __init__(
+            self,
+            *,
+            chain_id: "int",
+            address: "AnyBytes",
+            func_sig: "AnyBytes",
+            intent: "str",
+            parameter_definitions: "list[EthereumABIValueInfo] | None" = None,
+            field_definitions: "list[EthereumERC7730FieldInfo] | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["EthereumDisplayFormatInfo"]:
             return isinstance(msg, cls)
 
     class EosGetPublicKey(protobuf.MessageType):
@@ -4048,6 +4185,7 @@ if TYPE_CHECKING:
         definitions: "EthereumDefinitions | None"
         chunkify: "bool | None"
         payment_req: "PaymentRequest | None"
+        supports_definition_request: "bool | None"
 
         def __init__(
             self,
@@ -4065,6 +4203,7 @@ if TYPE_CHECKING:
             definitions: "EthereumDefinitions | None" = None,
             chunkify: "bool | None" = None,
             payment_req: "PaymentRequest | None" = None,
+            supports_definition_request: "bool | None" = None,
         ) -> None:
             pass
 
@@ -4087,6 +4226,7 @@ if TYPE_CHECKING:
         definitions: "EthereumDefinitions | None"
         chunkify: "bool | None"
         payment_req: "PaymentRequest | None"
+        supports_definition_request: "bool | None"
 
         def __init__(
             self,
@@ -4105,6 +4245,7 @@ if TYPE_CHECKING:
             definitions: "EthereumDefinitions | None" = None,
             chunkify: "bool | None" = None,
             payment_req: "PaymentRequest | None" = None,
+            supports_definition_request: "bool | None" = None,
         ) -> None:
             pass
 
@@ -4144,6 +4285,38 @@ if TYPE_CHECKING:
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["EthereumTxAck"]:
+            return isinstance(msg, cls)
+
+    class EthereumDefinitionRequest(protobuf.MessageType):
+        chain_id: "int"
+        token_address: "AnyBytes"
+        func_sig: "AnyBytes | None"
+
+        def __init__(
+            self,
+            *,
+            chain_id: "int",
+            token_address: "AnyBytes",
+            func_sig: "AnyBytes | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["EthereumDefinitionRequest"]:
+            return isinstance(msg, cls)
+
+    class EthereumDefinitionAck(protobuf.MessageType):
+        definitions: "EthereumDefinitions | None"
+
+        def __init__(
+            self,
+            *,
+            definitions: "EthereumDefinitions | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["EthereumDefinitionAck"]:
             return isinstance(msg, cls)
 
     class EthereumSignMessage(protobuf.MessageType):
@@ -4241,12 +4414,14 @@ if TYPE_CHECKING:
     class EthereumDefinitions(protobuf.MessageType):
         encoded_network: "AnyBytes | None"
         encoded_token: "AnyBytes | None"
+        encoded_display_format: "AnyBytes | None"
 
         def __init__(
             self,
             *,
             encoded_network: "AnyBytes | None" = None,
             encoded_token: "AnyBytes | None" = None,
+            encoded_display_format: "AnyBytes | None" = None,
         ) -> None:
             pass
 

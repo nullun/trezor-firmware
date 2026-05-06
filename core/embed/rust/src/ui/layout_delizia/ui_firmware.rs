@@ -18,7 +18,7 @@ use crate::{
                 },
                 TextStyle,
             },
-            Border, CachedJpeg, ComponentExt, Empty, FormattedText, MsgMap, Never, Timeout,
+            CachedJpeg, ComponentExt, Empty, FormattedText, MsgMap, Never, Timeout,
         },
         flow::FlowMsg,
         geometry::{self, Direction, Offset},
@@ -974,9 +974,13 @@ impl FirmwareUI for UIDelizia {
     fn show_info(
         title: TString<'static>,
         description: TString<'static>,
-        _button: TString<'static>,
+        _button: Option<(TString<'static>, bool)>,
         _time_ms: u32,
+        external_menu: bool, // TODO: will eventually replace the internal menu
     ) -> Result<Gc<LayoutObj>, Error> {
+        if external_menu {
+            return Err(Error::NotImplementedError);
+        }
         let content = Paragraphs::new(Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, description));
         let obj = LayoutObj::new(SwipeUpScreen::new(
             Frame::left_aligned(title, SwipeContent::new(content)).with_swipeup_footer(None),
@@ -1163,10 +1167,7 @@ impl FirmwareUI for UIDelizia {
         _title: Option<TString<'static>>,
         _button: Option<TString<'static>>,
     ) -> Result<Gc<LayoutObj>, Error> {
-        let obj = LayoutObj::new(Border::new(
-            theme::borders(),
-            Paragraphs::new(Paragraph::new(&theme::TEXT_DEMIBOLD, text)),
-        ))?;
+        let obj = LayoutObj::new(Paragraphs::new(Paragraph::new(&theme::TEXT_DEMIBOLD, text)))?;
         Ok(obj)
     }
 

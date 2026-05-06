@@ -73,6 +73,7 @@ message EthereumSignTx {
     optional EthereumDefinitions definitions = 12;        // network and/or token definitions for tx
     optional bool chunkify = 13;                          // display the address in chunks of 4 characters
     optional common.PaymentRequest payment_req = 14;      // SLIP-24 payment request
+    optional bool supports_definition_request = 15;       // whether the client supports EthereumDefinitionRequest
 }
 
 /**
@@ -97,6 +98,7 @@ message EthereumSignTxEIP1559 {
     optional EthereumDefinitions definitions = 12;        // network and/or token definitions for tx
     optional bool chunkify = 13;                          // display the address in chunks of 4 characters
     optional common.PaymentRequest payment_req = 14;      // SLIP-24 payment request
+    optional bool supports_definition_request = 15;       // whether the client supports EthereumDefinitionRequest
 
     message EthereumAccessList {
         required string address = 1;
@@ -112,7 +114,10 @@ message EthereumSignTxEIP1559 {
  * @next EthereumTxAck
  */
 message EthereumTxRequest {
+    // Request more information
     optional uint32 data_length = 1;  // Number of bytes being requested (<= 1024)
+
+    // Done. Return signature.
     optional uint32 signature_v = 2;  // Computed signature (recovery parameter, limited to 27 or 28)
     optional bytes signature_r = 3;   // Computed signature R component (256 bit)
     optional bytes signature_s = 4;   // Computed signature S component (256 bit)
@@ -121,9 +126,33 @@ message EthereumTxRequest {
 /**
  * Request: Transaction payload data.
  * @next EthereumTxRequest
+ * @next EthereumDefinitionRequest
  */
 message EthereumTxAck {
-    required bytes data_chunk = 1;  // Bytes from transaction payload (<= 1024 bytes)
+    required bytes data_chunk = 1;  // requested number of bytes from transaction payload (<= 1024)
+}
+
+/**
+ * Structure representing a request for extra Ethereum definitions.
+ * `token_address` carries the token address for token-definition lookups, or
+ * the target contract address when `func_sig` is set and a display format is
+ * being requested.
+ * @next EthereumDefinitionAck
+ */
+message EthereumDefinitionRequest {
+    required uint64 chain_id = 1;
+    required bytes token_address = 2;
+    optional bytes func_sig = 3;
+}
+
+/**
+ * Request: Definitions payload data.
+ * `definitions` can be missing if the host did not find matching definitions.
+ * @next EthereumTxRequest
+ * @next EthereumDefinitionRequest
+ */
+message EthereumDefinitionAck {
+    optional EthereumDefinitions definitions = 1;
 }
 
 /**
@@ -184,10 +213,11 @@ message EthereumTypedDataSignature {
 }
 
 /**
- * Contains an encoded network and/or token definition. See external-definitions.md for details.
+ * Contains encoded network, token and display format definitions. See external-definitions.md for details.
  * @embed
  */
 message EthereumDefinitions {
-    optional bytes encoded_network = 1;  // encoded ethereum network
-    optional bytes encoded_token = 2;    // encoded ethereum token
+    optional bytes encoded_network = 1;         // encoded ethereum network
+    optional bytes encoded_token = 2;           // encoded ethereum token
+    optional bytes encoded_display_format = 3;  // encoded display format
 }

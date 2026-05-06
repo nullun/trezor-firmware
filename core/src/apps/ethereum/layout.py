@@ -1,10 +1,12 @@
 from typing import TYPE_CHECKING
+from ubinascii import hexlify
 
 from trezor import TR
 from trezor.enums import ButtonRequestType
 from trezor.ui.layouts import (
     confirm_blob,
     confirm_ethereum_staking_tx,
+    confirm_ethereum_vault_claim,
     confirm_ethereum_vault_tx,
     confirm_text,
     should_show_more,
@@ -29,11 +31,12 @@ if TYPE_CHECKING:
         PaymentRequest,
     )
     from trezor.ui.layouts import StrPropertyType
+    from trezor.ui.layouts.properties import AboveThreshold
 
 
 async def require_confirm_approve(
     recipient_addr: str,
-    total_amount: str | None,
+    total_amount: str | AboveThreshold | None,
     recipient_str: str | None,
     address_n: list[int],
     maximum_fee: str,
@@ -239,34 +242,81 @@ async def require_confirm_stake(
     )
 
 
-async def require_confirm_deposit(
+async def require_confirm_vault_tx(
     value: int,
     address_n: list[int],
     maximum_fee: str,
     fee_info_items: Iterable[StrPropertyType],
     network: EthereumNetworkInfo,
-    vault_addr: AnyBytes,
+    vault_str: str,
+    token: EthereumTokenInfo,
+    func_sig: AnyBytes,
+    extra_data: AnyBytes | None = None,
 ) -> None:
+    from .yielding import FUNC_SIG_DEPOSIT, FUNC_SIG_REDEEM, FUNC_SIG_WITHDRAW
 
-    from .yielding_vaults import lookup_vault
+    if func_sig == FUNC_SIG_DEPOSIT:
+        title = TR.words__deposit
+        intro_question = TR.ethereum__vault_deposit_intro
+        verb = TR.ethereum__deposit_to
+        amount_label = TR.ethereum__deposit_amount
+        br_name = "ethereum/vault/deposit"
+    elif func_sig == FUNC_SIG_REDEEM:
+        title = TR.ethereum__redeem
+        intro_question = TR.ethereum__vault_redeem_intro
+        verb = TR.ethereum__redeem_from
+        amount_label = TR.ethereum__redeem_amount
+        br_name = "ethereum/vault/redeem"
+    elif func_sig == FUNC_SIG_WITHDRAW:
+        title = TR.ethereum__withdraw
+        intro_question = TR.ethereum__vault_withdraw_intro
+        verb = TR.ethereum__withdraw_from
+        amount_label = TR.ethereum__withdraw_amount
+        br_name = "ethereum/vault/withdraw"
+    else:
+        raise ValueError("Unknown vault function signature")
 
-    vault_name, token = lookup_vault(vault_addr, network)
-
-    total_amount = format_ethereum_amount(value, token, network)
+    amount = format_ethereum_amount(value, token, network)
     account, account_path = get_account_and_path(address_n)
 
+    extra_data_str: str | None = (
+        "0x" + hexlify(extra_data).decode() if extra_data is not None else None
+    )
+
     await confirm_ethereum_vault_tx(
-        title=TR.words__deposit,
-        intro_question=TR.ethereum__vault_deposit_intro,
-        verb=TR.ethereum__deposit_to,
-        vault_str=vault_name,
-        total_amount=total_amount,
+        title=title,
+        intro_question=intro_question,
+        verb=verb,
+        vault_str=vault_str,
+        amount=amount,
+        amount_label=amount_label,
         account=account,
         account_path=account_path,
         maximum_fee=maximum_fee,
         info_items=fee_info_items,
         chain=network.name,
-        br_name="ethereum/vault/deposit",
+        br_name=br_name,
+        extra_data=extra_data_str,
+    )
+
+
+async def require_confirm_claim_rewards(
+    address_n: list[int],
+    maximum_fee: str,
+    fee_info_items: Iterable[StrPropertyType],
+    token_labels: list[str],
+) -> None:
+    account, account_path = get_account_and_path(address_n)
+    token_list = "\n".join(token_labels)
+    await confirm_ethereum_vault_claim(
+        title=TR.ethereum__rewards_claim,
+        intro_question=TR.ethereum__vault_claim_intro,
+        account=account,
+        account_path=account_path,
+        maximum_fee=maximum_fee,
+        info_items=fee_info_items,
+        token_list=token_list,
+        br_name="ethereum/vault/claim",
     )
 
 

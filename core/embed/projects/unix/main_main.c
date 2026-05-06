@@ -22,12 +22,14 @@
 #include <io/display.h>
 #include <io/rsod.h>
 #include <io/usb_config.h>
+#include <sec/rsod_special.h>
 #include <sec/unit_properties.h>
 #include <sys/applet.h>
 #include <sys/bootutils.h>
 #include <sys/coreapp.h>
 #include <sys/flash.h>
 #include <sys/flash_otp.h>
+#include <sys/startup_args.h>
 #include <sys/system.h>
 #include <sys/systick.h>
 #include <sys/systimer.h>
@@ -45,6 +47,10 @@
 #include <io/ble.h>
 #endif
 
+#ifdef USE_POWER_MANAGER
+#include <io/power_manager.h>
+#endif
+
 #ifdef USE_TOUCH
 #include <io/touch.h>
 #endif
@@ -59,6 +65,10 @@
 
 #ifdef USE_SECRET
 #include <sec/secret.h>
+#endif
+
+#ifdef USE_MCU_ATTESTATION
+#include <sec/mcu_attestation.h>
 #endif
 
 #include <SDL.h>
@@ -91,17 +101,33 @@ static void drivers_init(void) {
   ble_init();
 #endif
 
+#ifdef USE_POWER_MANAGER
+  pm_init(true);
+#endif
+
 #ifdef USE_APP_LOADING
   app_cache_init();
   app_loader_init();
 #endif
 }
 
+static uintptr_t throw_exit_exception_trampoline(uintptr_t code,
+                                                 uintptr_t unused1,
+                                                 uintptr_t unused2) {
+  extern void coreapp_throw_exit_exception(int code);
+  UNUSED(unused1);
+  UNUSED(unused2);
+  coreapp_throw_exit_exception((int)code);
+  return 0;
+}
+
 // Throws MicroPython SystemExit exception in the context of the given task
 static void throw_exit_exception(systask_t *task, int code) {
-  extern void coreapp_throw_exit_exception(int code);
   // Push call to the task
-  systask_push_call(task, (void *)coreapp_throw_exit_exception, code, 0, 0);
+  if (!systask_push_call(task, (void *)throw_exit_exception_trampoline,
+                         (uintptr_t)code, 0, 0)) {
+    error_shutdown("Cannot throw exit exception");
+  }
   // Yield to the task and throw the exception
   systask_yield_to(task);
   // We are back and the task should be terminated by now
@@ -147,6 +173,19 @@ static void kernel_loop(applet_t *coreapp) {
 int main(int argc, char **argv) {
   system_init(&rsod_panic_handler);
 
+#ifdef USE_MCU_ATTESTATION
+  {
+    uint8_t mcu_device_cert[MCU_ATTESTATION_MAX_CERT_SIZE];
+    size_t mcu_device_cert_size = 0;
+    if (sectrue == secret_mcu_device_cert_read(mcu_device_cert,
+                                               sizeof(mcu_device_cert),
+                                               &mcu_device_cert_size)) {
+      startup_args_add(STARTUP_ARGS_TYPE_MCU_DEVICE_CERT, mcu_device_cert,
+                       mcu_device_cert_size);
+    }
+  }
+#endif
+
 #if defined(USE_SECRET) && defined(LOCKABLE_BOOTLOADER)
   secret_lock_bootloader();
 #endif
@@ -154,6 +193,9 @@ int main(int argc, char **argv) {
 #ifdef USE_SECP256K1_ZKP
   ensure(sectrue * (zkp_context_init() == 0), NULL);
 #endif
+
+  // Simulate the bootloader passing startup_args to firmware.
+  startup_args_import(startup_args_export());
 
   drivers_init();
 

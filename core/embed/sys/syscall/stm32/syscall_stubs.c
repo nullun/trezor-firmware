@@ -349,6 +349,30 @@ secbool secret_bootloader_locked(void) {
 #endif
 
 // =============================================================================
+#ifdef USE_MCU_ATTESTATION
+#include <sec/mcu_attestation.h>
+
+secbool mcu_attestation_cert_size(size_t *cert_size) {
+  return (secbool)syscall_invoke1((uint32_t)cert_size,
+                                  SYSCALL_MCU_ATTESTATION_CERT_SIZE);
+}
+
+secbool mcu_attestation_cert_read(uint8_t *cert, size_t max_cert_size,
+                                  size_t *cert_size) {
+  return (secbool)syscall_invoke3((uint32_t)cert, (uint32_t)max_cert_size,
+                                  (uint32_t)cert_size,
+                                  SYSCALL_MCU_ATTESTATION_CERT_READ);
+}
+
+secbool mcu_attestation_sign(const uint8_t *challenge, size_t challenge_size,
+                             uint8_t signature[MCU_ATTESTATION_SIG_SIZE]) {
+  return (secbool)syscall_invoke3((uint32_t)challenge, (uint32_t)challenge_size,
+                                  (uint32_t)signature,
+                                  SYSCALL_MCU_ATTESTATION_SIGN);
+}
+
+#endif  // USE_MCU_ATTESTATION
+
 // button.h
 // =============================================================================
 
@@ -474,7 +498,7 @@ bool optiga_read_sec(uint8_t *sec) {
   return (bool)syscall_invoke1((uint32_t)sec, SYSCALL_OPTIGA_READ_SEC);
 }
 
-#if PYOPT == 0
+#if USE_OPTIGA_TESTING
 void optiga_set_sec_max(void) { syscall_invoke0(SYSCALL_OPTIGA_SET_SEC_MAX); }
 
 #endif

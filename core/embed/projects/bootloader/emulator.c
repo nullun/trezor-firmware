@@ -24,7 +24,7 @@ LOG_DECLARE(emulator)
 
 #undef FIRMWARE_START
 
-uint8_t *FIRMWARE_START = 0;
+uintptr_t FIRMWARE_START = 0;
 
 int bootloader_main(void);
 
@@ -75,7 +75,7 @@ bool load_firmware(const char *filename, uint8_t *hash) {
 
   // read vendor and image header
   vendor_header vhdr;
-  if (sectrue != read_vendor_header(buffer, &vhdr)) {
+  if (sectrue != read_vendor_header(buffer, sizeof(buffer), &vhdr)) {
     printf("File '%s' does not contain a valid vendor header.\n", filename);
     return false;
   }
@@ -141,11 +141,13 @@ int main(int argc, char **argv) {
   flash_init();
   flash_otp_init();
 
-  FIRMWARE_START = (uint8_t *)flash_area_get_address(&FIRMWARE_AREA, 0, 0);
+  FIRMWARE_START = (uintptr_t)flash_area_get_address(&FIRMWARE_AREA, 0, 0);
 
   // simulate non-empty storage so that we know whether it was erased or not
   if (storage_empty(&STORAGE_AREAS[0])) {
-    secbool ret = flash_area_write_word(&STORAGE_AREAS[0], 16, 0x12345678);
+    uint32_t data = 0x12345678;
+    secbool ret =
+        flash_area_write_data(&STORAGE_AREAS[0], 0, &data, sizeof(data));
     (void)ret;
   }
 

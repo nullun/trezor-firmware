@@ -239,7 +239,7 @@ if TYPE_CHECKING:
         BLE = 22
         NFC = 23
         Tron = 24
-        Algorand = 25
+        N4W1 = 25
 
     class SdProtectOperationType(IntEnum):
         DISABLE = 0
@@ -289,6 +289,39 @@ if TYPE_CHECKING:
         ETHEREUM_NETWORK = 0
         ETHEREUM_TOKEN = 1
         SOLANA_TOKEN = 2
+        ETHEREUM_DISPLAY_FORMAT = 3
+
+    class EthereumABIType(IntEnum):
+        ABI_ADDRESS = 0
+        ABI_UINT256 = 1
+        ABI_UINT248 = 2
+        ABI_UINT160 = 3
+        ABI_UINT128 = 4
+        ABI_UINT120 = 5
+        ABI_UINT112 = 6
+        ABI_UINT96 = 7
+        ABI_UINT72 = 8
+        ABI_UINT64 = 9
+        ABI_UINT48 = 10
+        ABI_UINT40 = 11
+        ABI_UINT32 = 12
+        ABI_UINT24 = 13
+        ABI_UINT16 = 14
+        ABI_UINT8 = 15
+        ABI_BOOL = 16
+        ABI_BYTES = 20
+        ABI_STRING = 21
+
+    class EthereumERC7730FieldFormatterType(IntEnum):
+        FORMATTER_ADDRESS_NAME = 0
+        FORMATTER_AMOUNT = 1
+        FORMATTER_TOKEN_AMOUNT = 2
+        FORMATTER_UNIT = 3
+
+    class EthereumERC7730ContainerPath(IntEnum):
+        FROM = 1
+        VALUE = 2
+        TO = 3
 
     class EthereumDataType(IntEnum):
         UINT = 1
@@ -501,6 +534,7 @@ if TYPE_CHECKING:
         DebugLinkN4W1Write = 9015
         DebugLinkN4W1Read = 9016
         DebugLinkN4W1Response = 9017
+        DebugLinkSetBatteryState = 9018
         EthereumGetPublicKey = 450
         EthereumPublicKey = 451
         EthereumGetAddress = 56
@@ -519,6 +553,8 @@ if TYPE_CHECKING:
         EthereumTypedDataValueAck = 468
         EthereumTypedDataSignature = 469
         EthereumSignTypedHash = 470
+        EthereumDefinitionRequest = 471
+        EthereumDefinitionAck = 472
         NEMGetAddress = 67
         NEMAddress = 68
         NEMSignTx = 69

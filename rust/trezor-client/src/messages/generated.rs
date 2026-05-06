@@ -96,18 +96,7 @@ trezor_message_impl! {
     DebugLinkN4W1Write => MessageType_DebugLinkN4W1Write,
     DebugLinkN4W1Read => MessageType_DebugLinkN4W1Read,
     DebugLinkN4W1Response => MessageType_DebugLinkN4W1Response,
-    AlgorandGetPublicKey => MessageType_AlgorandGetPublicKey,
-    AlgorandPublicKey => MessageType_AlgorandPublicKey,
-    AlgorandGetAddress => MessageType_AlgorandGetAddress,
-    AlgorandAddress => MessageType_AlgorandAddress,
-    AlgorandSignTx => MessageType_AlgorandSignTx,
-    AlgorandTxRequest => MessageType_AlgorandTxRequest,
-    AlgorandTxAck => MessageType_AlgorandTxAck,
-    AlgorandTxSignature => MessageType_AlgorandTxSignature,
-    AlgorandSignData => MessageType_AlgorandSignData,
-    AlgorandDataSignature => MessageType_AlgorandDataSignature,
-    AlgorandGetFalconAddress => MessageType_AlgorandGetFalconAddress,
-    AlgorandFalconAddress => MessageType_AlgorandFalconAddress,
+    DebugLinkSetBatteryState => MessageType_DebugLinkSetBatteryState,
     ThpCreateNewSession => MessageType_ThpCreateNewSession,
     ThpCredentialRequest => MessageType_ThpCredentialRequest,
     ThpCredentialResponse => MessageType_ThpCredentialResponse,
@@ -205,6 +194,8 @@ trezor_message_impl! {
     EthereumTypedDataValueAck => MessageType_EthereumTypedDataValueAck,
     EthereumTypedDataSignature => MessageType_EthereumTypedDataSignature,
     EthereumSignTypedHash => MessageType_EthereumSignTypedHash,
+    EthereumDefinitionRequest => MessageType_EthereumDefinitionRequest,
+    EthereumDefinitionAck => MessageType_EthereumDefinitionAck,
 }
 
 #[cfg(feature = "evolu")]
