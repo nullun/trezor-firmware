@@ -270,6 +270,7 @@ class Capability(IntEnum):
     NFC = 23
     Tron = 24
     N4W1 = 25
+    Algorand = 26
 
 
 class SdProtectOperationType(IntEnum):

@@ -29,4 +29,4 @@ if not utils.BITCOIN_ONLY:
     U2F = 14
     Solana = 18
     Tron = 24
-    Algorand = 25
+    Algorand = 26

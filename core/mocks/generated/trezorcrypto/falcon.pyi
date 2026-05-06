@@ -2,11 +2,6 @@ from typing import *
 from buffer_types import *
 
 
-PRIVKEY_SIZE: int
-PUBKEY_SIZE: int
-SIG_COMPRESSED_MAXSIZE: int
-
-
 # upymod/modtrezorcrypto/modtrezorcrypto-falcon.h
 def keygen(seed: bytes) -> tuple[bytearray, bytes]:
     """

@@ -190,6 +190,7 @@ message Features {
         Capability_NFC = 23 [(bitcoin_only) = true];  // Near Field Communications
         Capability_Tron = 24;
         Capability_N4W1 = 25 [(bitcoin_only) = true];
+        Capability_Algorand = 26;
     }
 }
 
