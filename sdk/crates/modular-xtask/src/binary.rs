@@ -109,7 +109,10 @@ pub fn convert_elf_to_bin(elf_path: &Path, package: &Package) -> Result<PathBuf>
         .with_context(|| format!("Failed to parse the elf file {:?}", elf_path))?;
 
     ensure!(
-        elf.format() == object::BinaryFormat::Elf,
+        matches!(
+            elf.format(),
+            object::BinaryFormat::Elf | object::BinaryFormat::MachO
+        ),
         "Unsupported binary format: {:?}",
         elf.format()
     );
@@ -124,7 +127,13 @@ pub fn convert_elf_to_bin(elf_path: &Path, package: &Package) -> Result<PathBuf>
                 arm_binary.ram_size(),
             )
         }
-        object::Architecture::X86_64 => (AppBinaryType::X86_64, raw_elf, 0),
+        // Host emulator targets: the whole shared object is the payload — the
+        // unix loader writes it out and dlopens it, so no segment extraction is
+        // needed. The `X86_64` tag means "native host binary" (it satisfies the
+        // loader's XBIN_TARGET_X86_64 check); the OS handles the real arch.
+        object::Architecture::X86_64 | object::Architecture::Aarch64 => {
+            (AppBinaryType::X86_64, raw_elf, 0)
+        }
         arch => anyhow::bail!("Unsupported architecture: {:?}", arch),
     };
 

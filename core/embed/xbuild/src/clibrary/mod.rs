@@ -400,11 +400,15 @@ impl CLibrary {
         let extlib = pkg_config::probe_library(library_name)
             .with_context(|| format!("Failed to probe pkg-config library `{library_name}`"))?;
 
+        // Use -isystem rather than -I so external include directories are
+        // searched after all project ones and cannot shadow project headers
+        // (e.g. Homebrew's libvmaf ships a bare `version.h`).
         extlib.include_paths.iter().for_each(|path| {
+            let flags = ["-isystem".to_string(), path.display().to_string()];
             if make_public {
-                self.add_include(path);
+                self.add_flags(flags);
             } else {
-                self.add_private_include(path);
+                self.add_private_flags(flags);
             }
         });
 

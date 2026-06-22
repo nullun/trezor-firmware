@@ -56,7 +56,7 @@ impl CLibrary {
 
             for (filename, builder) in builders {
                 let mut content = Vec::<u8>::new();
-                builder
+                let mut builder = builder
                     .clang_args(attrs.to_compiler_args())
                     // Customize the standard types.
                     .use_core()
@@ -67,7 +67,19 @@ impl CLibrary {
                     .layout_tests(false)
                     // Tell cargo to invalidate the built crate whenever any of the
                     // included header files change.
-                    .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+                    .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()));
+
+                // On a macOS host (the unix emulator target) the nix GCC toolchain's
+                // <stddef.h> reaches libclang's include search and declares
+                // `max_align_t` with a `__float128` member. Apple clang rejects
+                // `__float128` on arm64 ("not supported on this target"), aborting
+                // binding generation. Define it to a type clang accepts; nothing we
+                // bind actually uses it.
+                if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+                    builder = builder.clang_arg("-D__float128=double");
+                }
+
+                builder
                     .generate()
                     .context("Unable to generate bindings")?
                     .write(Box::new(&mut content))

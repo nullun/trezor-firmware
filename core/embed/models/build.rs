@@ -65,6 +65,24 @@ fn main() -> Result<()> {
         if cfg!(feature = "emulator") {
             lib.add_flags(["-fstack-protector-all", "-fno-omit-frame-pointer", "-O1"]);
 
+            // Apple clang flags things that GCC accepts silently: arrays sized
+            // by a `const` variable, message-less _Static_assert (C23), and the
+            // unused `-c` that xbuild appends to preprocess-only (-E)
+            // invocations. All are pervasive, so silence them here rather than
+            // patching shared sources.
+            if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+                lib.add_flags([
+                    "-Wno-gnu-folding-constant",
+                    "-Wno-c23-extensions",
+                    "-Wno-unused-command-line-argument",
+                    "-Wno-unterminated-string-initialization",
+                    "-Wno-unused-but-set-variable",
+                    // Apple clang counts _Float16 -> float as a promotion
+                    // (micropython's py/binary.c); GCC does not.
+                    "-Wno-double-promotion",
+                ]);
+            }
+
             if cfg!(feature = "asan") {
                 lib.add_flags([
                     "-fsanitize=address,undefined",
@@ -76,7 +94,6 @@ fn main() -> Result<()> {
             // while clang does not, which causes bindgen to generate incorrect
             // bindings for enums. Therefore, we need to explicitly enable short
             // here. The options is propagated to clang when bindgen is run.
-
             lib.add_flags(["-nostdlib", "-fshort-enums", "-Os"]);
 
             if cfg!(feature = "bootloader")

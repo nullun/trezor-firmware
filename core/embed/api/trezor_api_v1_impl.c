@@ -28,9 +28,11 @@ bool syslog_start_record_(const log_source_t* source, uint32_t level) {
 #endif
 }
 
-// temporary hack to allow compilation when DBG console is disabled
+// temporary hack to allow compilation when DBG console is disabled;
+// weak so the real backend wins when both land in one binary (emulator)
 #ifndef USE_DBG_CONSOLE
-ssize_t dbg_console_write(const void* data, size_t data_size) {
+__attribute__((weak)) ssize_t dbg_console_write(const void* data,
+                                                size_t data_size) {
   return data_size;
 }
 

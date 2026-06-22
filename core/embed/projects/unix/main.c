@@ -792,7 +792,10 @@ MP_NOINLINE int main_(int argc, char **argv) {
 }
 
 #if USE_IPC
-uint32_t ipc_buffer[8192];
+// ipc_register() requires sizeof(size_t) alignment; on a 64-bit host a
+// uint32_t array may only be 4-aligned, and the misaligned buffer is
+// rejected silently, breaking every app->core IPC send.
+uint32_t __attribute__((aligned(sizeof(size_t)))) ipc_buffer[8192];
 #endif
 
 int coreapp_emu(int argc, char **argv) {
