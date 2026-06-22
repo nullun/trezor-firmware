@@ -13,7 +13,7 @@ pub use crate::low_level_api::ffi::{HMAC_SHA256_CTX, SHA256_CTX, SHA512_CTX};
 use crate::low_level_api::{ed25519_cosi_combine_publickeys, ed25519_sign_open, get_crypto_or_die};
 use crate::service::CoreIpcService;
 use crate::structs::TrezorCryptoResultRef;
-pub use crate::structs::{TrezorCryptoEnum, TrezorCryptoResult};
+pub use crate::structs::{Scheme, TrezorCryptoEnum, TrezorCryptoResult};
 use crate::util::Timeout;
 use crate::{Error, Result, unwrap};
 
@@ -276,6 +276,135 @@ pub mod secp256k1 {
     ) -> Option<crate::alloc_types::Vec<u8>> {
         ecdsa_recover(get_crypto_or_die().secp256k1, signature, digest)
     }
+}
+
+// ============================================================================
+// Family/scheme-based crypto API
+// ============================================================================
+//
+// These wrappers cover the `SchemeGetPublicKey`, `SchemeSignDigest`, and
+// `SchemeSignMessage` variants. They are independent of the existing
+// scheme-specific helpers (`get_xpub`, `sign_typed_hash`, ...) and can be
+// used alongside them.
+//
+// `scheme_get_public_key` and the signing helpers each issue exactly one IPC
+// round-trip and return exactly one result. Signing does not require fetching
+// the public key first.
+
+/// Retrieve the public key for `scheme` derived at `address_n`.
+///
+/// The byte representation is scheme-dependent (raw 32-byte ed25519 point,
+/// uncompressed secp256k1, etc.).
+pub fn scheme_get_public_key(
+    scheme: Scheme,
+    address_n: &[u32],
+) -> Result<crate::alloc_types::Vec<u8>> {
+    let value = TrezorCryptoEnum::SchemeGetPublicKey {
+        scheme,
+        address_n: address_n.into(),
+    };
+
+    match ipc_crypto_call(&value)? {
+        TrezorCryptoResult::PublicKey(pk) => Ok(pk),
+        _ => Err(Error::DataError("Failed to get public key")),
+    }
+}
+
+/// Sign a pre-hashed 32-byte `digest` under `scheme` at `address_n`.
+///
+/// `context` is an opaque, scheme-specific blob (chain id, OID prefix for
+/// FIPS hash-mode schemes, etc.). v1 schemes do not consume it but the
+/// argument is kept in the API to avoid a later signature break.
+///
+/// Ed25519 schemes reject this — use `scheme_sign_message` for ed25519.
+pub fn scheme_sign_digest(
+    scheme: Scheme,
+    address_n: &[u32],
+    digest: &[u8; 32],
+    context: Option<&[u8]>,
+) -> Result<crate::alloc_types::Vec<u8>> {
+    let value = TrezorCryptoEnum::SchemeSignDigest {
+        scheme,
+        address_n: address_n.into(),
+        digest: *digest,
+        context: context.map(|c| c.into()),
+    };
+
+    match ipc_crypto_call(&value)? {
+        TrezorCryptoResult::SignatureBytes(sig) => Ok(sig),
+        _ => Err(Error::DataError("Failed to sign digest")),
+    }
+}
+
+/// Sign a raw `message` under `scheme` at `address_n`. The scheme hashes
+/// internally (ed25519 family today; BIP340 / sr25519 / ML-DSA pure-mode in
+/// future).
+pub fn scheme_sign_message(
+    scheme: Scheme,
+    address_n: &[u32],
+    message: &[u8],
+) -> Result<crate::alloc_types::Vec<u8>> {
+    let value = TrezorCryptoEnum::SchemeSignMessage {
+        scheme,
+        address_n: address_n.into(),
+        message: message.into(),
+    };
+
+    match ipc_crypto_call(&value)? {
+        TrezorCryptoResult::SignatureBytes(sig) => Ok(sig),
+        _ => Err(Error::DataError("Failed to sign message")),
+    }
+}
+
+// ---- Typed convenience wrappers --------------------------------------------
+//
+// These wrap the generic functions and return fixed-size arrays sized for the
+// chosen scheme. App authors that pin a curve can use these and skip the
+// variable-length unwrapping.
+
+/// Ed25519 pubkey (32 bytes), pure-mode (RFC 8032).
+pub fn ed25519_get_public_key(address_n: &[u32]) -> Result<[u8; 32]> {
+    let pk = scheme_get_public_key(Scheme::Ed25519, address_n)?;
+    pk.as_slice()
+        .try_into()
+        .map_err(|_| Error::DataError("Unexpected ed25519 pubkey length"))
+}
+
+/// Ed25519 signature over `message` (64 bytes), pure-mode.
+pub fn ed25519_sign(address_n: &[u32], message: &[u8]) -> Result<[u8; 64]> {
+    let sig = scheme_sign_message(Scheme::Ed25519, address_n, message)?;
+    sig.as_slice()
+        .try_into()
+        .map_err(|_| Error::DataError("Unexpected ed25519 signature length"))
+}
+
+/// Ed25519 signature with Keccak-256 internal hasher (NEM-style).
+pub fn ed25519_keccak_sign(address_n: &[u32], message: &[u8]) -> Result<[u8; 64]> {
+    let sig = scheme_sign_message(Scheme::Ed25519Keccak, address_n, message)?;
+    sig.as_slice()
+        .try_into()
+        .map_err(|_| Error::DataError("Unexpected ed25519-keccak signature length"))
+}
+
+/// Secp256k1 uncompressed public key (65 bytes, 0x04 || X || Y).
+pub fn secp256k1_eth_get_public_key(address_n: &[u32]) -> Result<[u8; 65]> {
+    let pk = scheme_get_public_key(Scheme::Secp256k1Ethereum, address_n)?;
+    pk.as_slice()
+        .try_into()
+        .map_err(|_| Error::DataError("Unexpected secp256k1 pubkey length"))
+}
+
+/// Secp256k1 ECDSA signature over a 32-byte digest, Ethereum canonical (65
+/// bytes, recid in byte 0).
+///
+/// Note: prefer `sign_typed_hash` if you need Ethereum network/token context
+/// passed to the device for derivation policy. This path uses the generic
+/// `Secp256k1Ethereum` keychain with no network awareness.
+pub fn secp256k1_eth_sign_digest(address_n: &[u32], digest: &[u8; 32]) -> Result<[u8; 65]> {
+    let sig = scheme_sign_digest(Scheme::Secp256k1Ethereum, address_n, digest, None)?;
+    sig.as_slice()
+        .try_into()
+        .map_err(|_| Error::DataError("Unexpected secp256k1 signature length"))
 }
 
 /// ECDSA over the NIST P-256 (secp256r1) curve.
