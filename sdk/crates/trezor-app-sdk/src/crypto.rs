@@ -44,6 +44,9 @@ fn ipc_crypto_call<'a>(value: &TrezorCryptoEnum<'a>) -> CryptoResult {
         Archived::<TrezorCryptoResultRef>::Signature(signature) => {
             TrezorCryptoResult::Signature(*signature)
         }
+        Archived::<TrezorCryptoResultRef>::SignatureBytes(signature) => {
+            TrezorCryptoResult::SignatureBytes(Vec::from(signature.as_ref()))
+        }
     };
 
     Ok(result)

@@ -828,6 +828,23 @@ pub enum TrezorUiResult {
     Integer(u32),
 }
 
+/// Signing/keying scheme selector used by the family-based crypto variants
+/// (`SchemeGetPublicKey`, `SchemeSignDigest`, `SchemeSignMessage`).
+///
+/// Adding a scheme is an additive change: extend this enum, register a handler
+/// on the Python side, and add a typed wrapper in the SDK. Existing
+/// scheme-specific variants (`GetXpub`, `SignTypedHash`, ...) are unaffected.
+#[derive(uDebug, Archive, Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum Scheme {
+    /// secp256k1 ECDSA with Ethereum canonical (low-S, recid in byte 0)
+    Secp256k1Ethereum = 0,
+    /// Ed25519 (pure mode, RFC 8032), SHA-512 internally (Algorand-style variants)
+    Ed25519 = 1,
+    /// Ed25519 with Keccak-256 internal hash (Stellar/Tezos-style variants)
+    Ed25519Keccak = 2,
+}
+
 /// All crypto operations that can be requested from the app via IPC.
 ///
 /// Constructed by the higher-level `crypto` module — do not construct variants directly.
@@ -866,6 +883,30 @@ pub enum TrezorCryptoEnum<'a> {
     VerifyNonceCache {
         nonce: Slice<'a, u8>,
     },
+    // -- family/scheme-based crypto operations -------------------------------
+    /// Retrieve the public key for `scheme` at `address_n`. The returned
+    /// representation depends on the scheme (raw 32-byte ed25519 pubkey vs.
+    /// uncompressed/compressed secp256k1 etc.).
+    SchemeGetPublicKey {
+        scheme: Scheme,
+        address_n: Slice<'a, u32>,
+    },
+    /// Sign a pre-hashed `digest` under `scheme` at `address_n`. `context` is
+    /// an opaque, scheme-specific blob (chain id / network defs / OID prefix
+    /// for FIPS hash-mode schemes / etc.) — the scheme handler interprets it.
+    SchemeSignDigest {
+        scheme: Scheme,
+        address_n: Slice<'a, u32>,
+        digest: [u8; 32],
+        context: Option<Slice<'a, u8>>,
+    },
+    /// Sign a raw `message` under `scheme` at `address_n`. For schemes that
+    /// hash internally (ed25519, BIP340, sr25519, ML-DSA pure mode).
+    SchemeSignMessage {
+        scheme: Scheme,
+        address_n: Slice<'a, u32>,
+        message: Slice<'a, u8>,
+    },
 }
 
 impl<'a> TrezorCryptoEnum<'a> {
@@ -878,6 +919,9 @@ impl<'a> TrezorCryptoEnum<'a> {
             Self::GetAddressMac { .. } => 4,
             Self::CheckAddressMac { .. } => 5,
             Self::VerifyNonceCache { .. } => 6,
+            Self::SchemeGetPublicKey { .. } => 7,
+            Self::SchemeSignDigest { .. } => 8,
+            Self::SchemeSignMessage { .. } => 9,
         }
     }
 }
@@ -893,6 +937,10 @@ pub enum TrezorCryptoResultRef<'a> {
     Signature([u8; 65]),
     AddressMac([u8; 32]),
     Boolean(bool),
+    /// Variable-length signature, scheme-dependent encoding (family/scheme
+    /// crypto operations). Ed25519 signatures are 64 bytes, ecdsa-with-recid
+    /// 65; future schemes may differ.
+    SignatureBytes(Slice<'a, u8>),
 }
 
 // Manual uDebug: `[u8; 111]`/`[u8; 65]` are too long for ufmt's built-in
@@ -909,6 +957,7 @@ impl<'a> ufmt::uDebug for TrezorCryptoResultRef<'a> {
             Self::Signature(sig) => f.debug_tuple("Signature")?.field(&&sig[..])?.finish(),
             Self::AddressMac(mac) => f.debug_tuple("AddressMac")?.field(mac)?.finish(),
             Self::Boolean(b) => f.debug_tuple("Boolean")?.field(b)?.finish(),
+            Self::SignatureBytes(sig) => f.debug_tuple("SignatureBytes")?.field(sig)?.finish(),
         }
     }
 }
@@ -925,6 +974,9 @@ pub enum TrezorCryptoResult {
     Signature([u8; 65]),
     AddressMac([u8; 32]),
     Boolean(bool),
+    /// Variable-length signature, scheme-dependent encoding (family/scheme
+    /// crypto operations).
+    SignatureBytes(crate::alloc_types::Vec<u8>),
 }
 
 #[cfg(feature = "app")]
@@ -939,6 +991,9 @@ impl ufmt::uDebug for TrezorCryptoResult {
             Self::Signature(sig) => f.debug_tuple("Signature")?.field(&&sig[..])?.finish(),
             Self::AddressMac(mac) => f.debug_tuple("AddressMac")?.field(mac)?.finish(),
             Self::Boolean(b) => f.debug_tuple("Boolean")?.field(b)?.finish(),
+            Self::SignatureBytes(sig) => {
+                f.debug_tuple("SignatureBytes")?.field(&sig.as_slice())?.finish()
+            }
         }
     }
 }
@@ -1044,12 +1099,39 @@ mod tests {
                 .id(),
                 "VerifyNonceCache",
             ),
+            (
+                SchemeGetPublicKey {
+                    scheme: Scheme::Ed25519,
+                    address_n: empty_u32.into(),
+                }
+                .id(),
+                "SchemeGetPublicKey",
+            ),
+            (
+                SchemeSignDigest {
+                    scheme: Scheme::Secp256k1Ethereum,
+                    address_n: empty_u32.into(),
+                    digest: [0u8; 32],
+                    context: None,
+                }
+                .id(),
+                "SchemeSignDigest",
+            ),
+            (
+                SchemeSignMessage {
+                    scheme: Scheme::Ed25519,
+                    address_n: empty_u32.into(),
+                    message: empty_u8.into(),
+                }
+                .id(),
+                "SchemeSignMessage",
+            ),
         ];
         let mut seen = std::collections::HashSet::new();
         for (id, name) in variants {
             assert!(seen.insert(id), "duplicate id {} for variant {}", id, name);
         }
-        assert_eq!(variants.len(), 7, "new variant added but test not updated");
+        assert_eq!(variants.len(), 10, "new variant added but test not updated");
     }
 
     /// Ensures every variant of TrezorProgressEnum has a unique id()
