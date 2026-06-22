@@ -121,7 +121,10 @@ static void drivers_init(void) {
 #endif
 
 #ifdef USE_APP_LOADING
-  app_arena_init();
+  {
+    ts_t status = app_arena_init();
+    ensure_ok(status, "app_arena_init failed");
+  }
 #endif
 }
 
