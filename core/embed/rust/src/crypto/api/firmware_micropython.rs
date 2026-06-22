@@ -10,7 +10,7 @@ use rkyv::{
     Archived,
 };
 #[cfg(feature = "app_loading")]
-use trezor_app_sdk::crypto::{Slice, TrezorCryptoEnum, TrezorCryptoResultRef};
+use trezor_app_sdk::crypto::{ArchivedScheme, Slice, TrezorCryptoEnum, TrezorCryptoResultRef};
 
 #[cfg(feature = "app_loading")]
 use crate::micropython::gc::Gc;
@@ -24,6 +24,24 @@ use crate::{
     error::Error,
     micropython::{list::List, util},
 };
+
+/// Stable integer encoding of `Scheme` handed across the Rust↔Python boundary.
+/// Kept here (not derived from rkyv's archive discriminant) so the Python side
+/// has a contract that doesn't shift when archive layout changes.
+#[cfg(feature = "app_loading")]
+fn scheme_to_int(scheme: &ArchivedScheme) -> u8 {
+    match scheme {
+        ArchivedScheme::Secp256k1Ethereum => 0,
+        ArchivedScheme::Ed25519 => 1,
+        ArchivedScheme::Ed25519Keccak => 2,
+    }
+}
+
+/// Tag for `new_send_crypto_result_typed` — keep in sync with `run.py`.
+#[cfg(feature = "app_loading")]
+const CRYPTO_RESULT_KIND_PUBLIC_KEY: u8 = 0;
+#[cfg(feature = "app_loading")]
+const CRYPTO_RESULT_KIND_SIGNATURE: u8 = 1;
 
 #[cfg(feature = "app_loading")]
 extern "C" fn new_deserialize_crypto_message(
@@ -127,6 +145,44 @@ extern "C" fn new_deserialize_crypto_message(
                 address.as_ref().try_into()?,
             )
                 .try_into()?,
+            Archived::<TrezorCryptoEnum>::SchemeGetPublicKey { scheme, address_n } => {
+                let scheme_int = scheme_to_int(scheme);
+                (Obj::try_from(scheme_int)?, obj_from_dp_slice(address_n)).try_into()?
+            }
+            Archived::<TrezorCryptoEnum>::SchemeSignDigest {
+                scheme,
+                address_n,
+                digest,
+                context,
+            } => {
+                let scheme_int = scheme_to_int(scheme);
+                let digest_obj = Obj::try_from(digest.as_slice())?;
+                let context_obj = match context.as_ref() {
+                    Some(ctx) => Obj::try_from(ctx.as_ref())?,
+                    None => Obj::const_none(),
+                };
+                (
+                    Obj::try_from(scheme_int)?,
+                    obj_from_dp_slice(address_n),
+                    digest_obj,
+                    context_obj,
+                )
+                    .try_into()?
+            }
+            Archived::<TrezorCryptoEnum>::SchemeSignMessage {
+                scheme,
+                address_n,
+                message,
+            } => {
+                let scheme_int = scheme_to_int(scheme);
+                let message_obj = Obj::try_from(message.as_ref())?;
+                (
+                    Obj::try_from(scheme_int)?,
+                    obj_from_dp_slice(address_n),
+                    message_obj,
+                )
+                    .try_into()?
+            }
         };
 
         Ok(result)
@@ -225,6 +281,74 @@ extern "C" fn new_send_crypto_result(_n_args: usize, _args: *const Obj, _kwargs:
     unimplemented!()
 }
 
+/// Serialize a typed crypto result whose variant is selected by an explicit
+/// `kind` tag rather than length-discrimination. Used for the new family-based
+/// result variants (`PublicKey`, `SignatureBytes`); the length-based
+/// `new_send_crypto_result` keeps serving the legacy variants unchanged.
+#[cfg(feature = "app_loading")]
+extern "C" fn new_send_crypto_result_typed(
+    n_args: usize,
+    args: *const Obj,
+    kwargs: *mut Map,
+) -> Obj {
+    let block = |_args: &[Obj], kwargs: &Map| {
+        let kind_obj: Obj = kwargs.get(Qstr::MP_QSTR_kind)?;
+        let result_obj: Obj = kwargs.get(Qstr::MP_QSTR_result)?;
+
+        let ipc_callback: Option<Obj> = kwargs
+            .get(Qstr::MP_QSTR_ipc_cb)
+            .unwrap_or_else(|_| Obj::const_none())
+            .try_into_option()?;
+
+        let ipc_cb = unwrap!(ipc_callback.map(|cb| {
+            move |bytes: &[u8]| {
+                unwrap!(cb.call_with_n_args(&[unwrap!(bytes.try_into())]));
+            }
+        }));
+
+        let kind: u8 = kind_obj.try_into()?;
+        let data = unwrap!(unsafe { crate::micropython::buffer::get_buffer(result_obj) });
+
+        let msg = match kind {
+            CRYPTO_RESULT_KIND_PUBLIC_KEY => {
+                TrezorCryptoResultRef::PublicKey(unwrap!(data.try_into()))
+            }
+            CRYPTO_RESULT_KIND_SIGNATURE => {
+                TrezorCryptoResultRef::SignatureBytes(unwrap!(data.try_into()))
+            }
+            _ => {
+                log::error!("Unknown typed crypto result kind: {}", kind);
+                return Err(Error::TypeError);
+            }
+        };
+
+        // Buffer sized for the variable-length payloads above (public keys and
+        // signatures of today's schemes are at most 65 bytes) plus rkyv
+        // archive overhead.
+        let mut arena = [MaybeUninit::<u8>::uninit(); 256];
+        let mut out = Align([MaybeUninit::<u8>::uninit(); 256]);
+
+        let bytes = unwrap!(to_bytes_in_with_alloc::<_, _, Failure>(
+            &msg,
+            Buffer::from(&mut *out),
+            SubAllocator::new(&mut arena),
+        ));
+        ipc_cb(bytes.as_ref());
+
+        Ok(Obj::const_none())
+    };
+    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
+}
+
+#[cfg(not(feature = "app_loading"))]
+extern "C" fn new_send_crypto_result_typed(
+    _n_args: usize,
+    _args: *const Obj,
+    _kwargs: *mut Map,
+) -> Obj {
+    unimplemented!()
+}
+
 #[no_mangle]
 pub static mp_module_trezorcrypto_api: Module = obj_module! {
 
@@ -239,7 +363,17 @@ pub static mp_module_trezorcrypto_api: Module = obj_module! {
     ///     """Serialize a crypto result (e.g. CryptoResult) into bytes and send it back via the ipc_cb callback."""
     Qstr::MP_QSTR_send_crypto_result => obj_fn_kw!(0, new_send_crypto_result).as_obj(),
 
-
+    /// def send_crypto_result_typed(
+    ///     *,
+    ///     kind: int,
+    ///     result: bytes,
+    ///     ipc_cb: Callable[[bytes], None],
+    /// ) -> None:
+    ///     """Serialize a single variable-length crypto result (either a PublicKey or a SignatureBytes,
+    ///     selected by `kind`) and send it back via the ipc_cb callback. One call delivers one result;
+    ///     a signing request returns only a signature, a public-key request returns only a public key.
+    ///     `kind` values are the CRYPTO_RESULT_KIND_* constants in apps/trezorapp/run.py."""
+    Qstr::MP_QSTR_send_crypto_result_typed => obj_fn_kw!(0, new_send_crypto_result_typed).as_obj(),
 
     /// def deserialize_crypto_message(
     ///     *,

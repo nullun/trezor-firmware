@@ -462,6 +462,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_joint__title;
   MP_QSTR_joint__to_the_total_amount;
   MP_QSTR_joint__you_are_contributing;
+  MP_QSTR_kind;
   MP_QSTR_label;
   MP_QSTR_language;
   MP_QSTR_language__change_to_template;
@@ -845,6 +846,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_send__transaction_signed;
   MP_QSTR_send__you_are_contributing;
   MP_QSTR_send_crypto_result;
+  MP_QSTR_send_crypto_result_typed;
   MP_QSTR_send_transport_busy;
   MP_QSTR_send_ui_result;
   MP_QSTR_set_brightness;

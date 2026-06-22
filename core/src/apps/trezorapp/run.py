@@ -44,6 +44,22 @@ _SERVICE_CRYPTO_SIGN_TYPED_HASH = const(3)
 _SERVICE_CRYPTO_GET_ADDRESS_MAC = const(4)
 _SERVICE_CRYPTO_CHECK_ADDRESS_MAC = const(5)
 _SERVICE_CRYPTO_VERIFY_NONCE_CACHE = const(6)
+# Family/scheme-based crypto ops. Match the `id()` numbering in
+# `sdk/crates/trezor-app-sdk/src/structs.rs`.
+_SERVICE_CRYPTO_SCHEME_GET_PUBLIC_KEY = const(7)
+_SERVICE_CRYPTO_SCHEME_SIGN_DIGEST = const(8)
+_SERVICE_CRYPTO_SCHEME_SIGN_MESSAGE = const(9)
+
+# Scheme tags — must match `scheme_to_int` in
+# `core/embed/rust/src/crypto/api/firmware_micropython.rs`.
+_SCHEME_SECP256K1_ETHEREUM = const(0)
+_SCHEME_ED25519 = const(1)
+_SCHEME_ED25519_KECCAK = const(2)
+
+# Result kind tags for `send_crypto_result_typed` — must match the
+# `CRYPTO_RESULT_KIND_*` constants in firmware_micropython.rs.
+_CRYPTO_RESULT_KIND_PUBLIC_KEY = const(0)
+_CRYPTO_RESULT_KIND_SIGNATURE = const(1)
 
 
 def fn_id(service: int, message_id: int) -> int:
@@ -145,6 +161,9 @@ async def run(request: TrezorAppMessage) -> TrezorAppResponse:
             trezorui_api.send_ui_result(result=result, ipc_cb=ui_resp_cb)
 
         elif service == _SERVICE_CRYPTO:
+            # `result_kind = None` selects the legacy send_crypto_result path;
+            # family-based ops below set it to a `_CRYPTO_RESULT_KIND_*` value.
+            result_kind: int | None = None
             try:
                 if __debug__:
                     log.debug(__name__, "Processing crypto message")
@@ -312,7 +331,41 @@ async def run(request: TrezorAppMessage) -> TrezorAppResponse:
                     except Exception:
                         log.error(__name__, "Failed to verify nonce cache")
                         result = False
-
+                # -- family/scheme-based operations -----------------------
+                elif message_id == _SERVICE_CRYPTO_SCHEME_GET_PUBLIC_KEY:
+                    assert len(obj) == 2
+                    scheme: int = obj[0]
+                    address_n: list[int] = obj[1]
+                    try:
+                        result = await _get_public_key_for_scheme(scheme, address_n)
+                        result_kind = _CRYPTO_RESULT_KIND_PUBLIC_KEY
+                    except:  # noqa: E722
+                        result = False
+                elif message_id == _SERVICE_CRYPTO_SCHEME_SIGN_DIGEST:
+                    assert len(obj) == 4
+                    scheme: int = obj[0]
+                    address_n: list[int] = obj[1]
+                    digest: bytes = obj[2]
+                    context: bytes | None = obj[3]
+                    try:
+                        result = await _sign_digest_for_scheme(
+                            scheme, address_n, digest, context
+                        )
+                        result_kind = _CRYPTO_RESULT_KIND_SIGNATURE
+                    except:  # noqa: E722
+                        result = False
+                elif message_id == _SERVICE_CRYPTO_SCHEME_SIGN_MESSAGE:
+                    assert len(obj) == 3
+                    scheme: int = obj[0]
+                    address_n: list[int] = obj[1]
+                    message: bytes = obj[2]
+                    try:
+                        result = await _sign_message_for_scheme(
+                            scheme, address_n, message
+                        )
+                        result_kind = _CRYPTO_RESULT_KIND_SIGNATURE
+                    except:  # noqa: E722
+                        result = False
                 else:
                     log.error(__name__, f"Unknown crypto operation: {message_id}")
                     die(DataError("Unknown crypto operation"))
@@ -321,13 +374,22 @@ async def run(request: TrezorAppMessage) -> TrezorAppResponse:
                 log.error(__name__, "Failed to process crypto message")
                 result = False
 
-            # Serialize and send the result back
+            # Serialize and send the result back. Family-based ops set
+            # `result_kind` to select the typed result variant; legacy ops
+            # leave it as None and use the length-discriminated entry point.
             try:
                 if __debug__:
                     log.debug(__name__, "Serializing crypto result")
-                trezorcrypto_api.send_crypto_result(
-                    result=result, ipc_cb=crypto_resp_cb
-                )
+                if result_kind is None:
+                    trezorcrypto_api.send_crypto_result(
+                        result=result, ipc_cb=crypto_resp_cb
+                    )
+                else:
+                    trezorcrypto_api.send_crypto_result_typed(
+                        kind=result_kind,
+                        result=result,
+                        ipc_cb=crypto_resp_cb,
+                    )
             except Exception:
                 if __debug__:
                     log.error(__name__, "Failed to serialize or send crypto result")
@@ -585,3 +647,116 @@ async def _verify_nonce_cache(nonce: bytes) -> bool:
         context.cache_delete(APP_COMMON_NONCE)
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Family/scheme-based crypto handlers
+# ---------------------------------------------------------------------------
+#
+# These mirror the `TrezorCryptoEnum::SchemeGetPublicKey / SchemeSignDigest /
+# SchemeSignMessage` variants in `sdk/crates/trezor-app-sdk/src/structs.rs`. Adding a new scheme
+# inside an existing family means: extend the `Scheme` enum, register a branch
+# below, and add a typed wrapper in `sdk/crates/trezor-app-sdk/src/crypto.rs`.
+# The IPC schema does not change.
+
+
+def _validate_ed25519_path(address_n: list[int]) -> None:
+    # SLIP-10 ed25519 keychains require fully-hardened paths.
+    if not address_n or not all(i & 0x80000000 for i in address_n):
+        raise DataError("Ed25519 paths must be fully hardened")
+
+
+def _ed25519_curve_name(scheme: int) -> str:
+    if scheme == _SCHEME_ED25519:
+        return "ed25519"
+    if scheme == _SCHEME_ED25519_KECCAK:
+        return "ed25519-keccak"
+    raise DataError("Unknown ed25519 scheme")
+
+
+async def _get_public_key_for_scheme(scheme: int, address_n: list[int]) -> bytes:
+    from trezor.crypto.curve import ed25519, secp256k1
+
+    if scheme == _SCHEME_SECP256K1_ETHEREUM:
+        keychain = await get_keychain(
+            "secp256k1", [paths.AlwaysMatchingSchema], [[b"SLIP-0024"]]
+        )
+        node = keychain.derive(address_n)
+        # Uncompressed secp256k1 public key (0x04 || X || Y) — 65 bytes.
+        return secp256k1.publickey(node.private_key(), False)
+
+    if scheme in (_SCHEME_ED25519, _SCHEME_ED25519_KECCAK):
+        _validate_ed25519_path(address_n)
+        keychain = await get_keychain(
+            _ed25519_curve_name(scheme), [paths.AlwaysMatchingSchema]
+        )
+        node = keychain.derive(address_n)
+        # Raw ed25519 public key — 32 bytes.
+        return ed25519.publickey(node.private_key())
+
+    raise DataError("Unsupported scheme for SchemeGetPublicKey")
+
+
+async def _sign_digest_for_scheme(
+    scheme: int,
+    address_n: list[int],
+    digest: bytes,
+    context: bytes | None,
+) -> bytes:
+    # `context` is reserved for scheme-specific extras (chain id, OID prefix,
+    # etc.). For v1 no scheme consumes it; future Ethereum / FIPS HashML-DSA
+    # handlers will. Keeping it in the wire shape avoids a later schema change.
+    from trezor.crypto.curve import secp256k1
+
+    if scheme == _SCHEME_SECP256K1_ETHEREUM:
+        keychain = await get_keychain(
+            "secp256k1", [paths.AlwaysMatchingSchema], [[b"SLIP-0024"]]
+        )
+        node = keychain.derive(address_n)
+        # 65-byte signature (recid in byte 0), Ethereum canonical (low-S).
+        return secp256k1.sign(
+            node.private_key(),
+            digest,
+            False,
+            secp256k1.CANONICAL_SIG_ETHEREUM,
+        )
+
+    if scheme in (_SCHEME_ED25519, _SCHEME_ED25519_KECCAK):
+        # Pure-mode ed25519 signs the message, not a digest. Pre-hashed
+        # ("HashEdDSA", RFC 8032 §8) would belong here behind a separate
+        # Scheme::Ed25519Hash{Sha512|Keccak} entry; not implemented yet.
+        raise DataError(
+            "Ed25519 schemes do not support SignDigest; use SignMessage"
+        )
+
+    raise DataError("Unsupported scheme for SchemeSignDigest")
+
+
+async def _sign_message_for_scheme(
+    scheme: int,
+    address_n: list[int],
+    message: bytes,
+) -> bytes:
+    from trezor.crypto.curve import ed25519
+
+    if scheme == _SCHEME_ED25519:
+        _validate_ed25519_path(address_n)
+        keychain = await get_keychain("ed25519", [paths.AlwaysMatchingSchema])
+        node = keychain.derive(address_n)
+        return ed25519.sign(node.private_key(), message)
+
+    if scheme == _SCHEME_ED25519_KECCAK:
+        _validate_ed25519_path(address_n)
+        keychain = await get_keychain(
+            "ed25519-keccak", [paths.AlwaysMatchingSchema]
+        )
+        node = keychain.derive(address_n)
+        return ed25519.sign(node.private_key(), message, "keccak")
+
+    if scheme == _SCHEME_SECP256K1_ETHEREUM:
+        # secp256k1 needs a digest, not a raw message. Use SignDigest.
+        raise DataError(
+            "Secp256k1Ethereum does not support SignMessage; use SignDigest"
+        )
+
+    raise DataError("Unsupported scheme for SchemeSignMessage")
