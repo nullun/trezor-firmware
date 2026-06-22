@@ -7,12 +7,12 @@ import ustruct  # pyright: ignore[reportMissingImports]
 from storage import cache_common as cc
 from storage.cache import get_sessionless_cache
 from trezor import app, io, loop
-from trezor.messages import Failure, TrezorAppMessage, TrezorAppResponse
+from trezor.messages import TrezorAppMessage, TrezorAppResponse
 from trezor.ui import ProgressLayout
 from trezor.ui.layouts.common import interact
 from trezor.ui.layouts.progress import progress
 from trezor.wire import context
-from trezor.wire.errors import DataError
+from trezor.wire.errors import DataError, Error as WireError
 
 from apps.common import paths
 from apps.common.keychain import Keychain, get_keychain
@@ -467,6 +467,11 @@ async def run(request: TrezorAppMessage) -> TrezorAppResponse:
                 die(DataError("Failed to send progress result"))
 
         elif service == _SERVICE_WIRE_ERROR:
+            # Terminal response: the app reports an error, we surface it to
+            # the host as a Failure and exit `run`. The wire layer converts a
+            # `wire.Error` into `Failure(code, message)` for us. The app task
+            # stays alive in its own receive loop, ready for the next
+            # TrezorAppMessage from the host.
             err_message = (
                 msg.data.decode("utf-8", "replace")
                 if isinstance(msg.data, (bytes, bytearray))
@@ -474,18 +479,7 @@ async def run(request: TrezorAppMessage) -> TrezorAppResponse:
             )
             if __debug__:
                 log.debug(__name__, f"Received wire error message: {err_message}")
-            response = Failure(
-                code=message_id,  # pyright: ignore [reportArgumentType]
-                message=err_message,
-            )
-            ack = await context.call(response, TrezorAppMessage)
-            if ack.message_id > 0xFFFF:
-                die(DataError("Invalid message ID."))
-            io.ipc_send(
-                task_id,
-                fn_id(_SERVICE_WIRE_START, ack.message_id),
-                ack.data,
-            )
+            raise WireError(message_id, err_message)
 
         else:
             if __debug__:
