@@ -1,0 +1,35 @@
+[project]
+name = "algorand"
+version = "0.1.0"
+description = "Device tests for the Algorand modular app"
+readme = "README.md"
+requires-python = ">=3.9, <4"
+
+[dependency-groups]
+
+dev = [
+    "pytest>=8.4.1",
+    "pytest-xdist>=3.6.1",
+    "trezor",
+    "Pillow>=11",
+    "dominate",
+    "requests>=2.32.5",
+    "mako>=1.0.7,<2",
+    "protobuf",
+    # Reference Algorand implementation used to build test vectors and provide
+    # an independent oracle for the device's tiny-algo codec/signing.
+    "py-algorand-sdk>=2.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+# `scripts/` holds standalone tools named test_*.py (the fuzzer needs algosdk/
+# msgpack, which aren't test deps). `cargo xtask device-tests` passes an empty
+# positional arg that overrides `testpaths`, so ignore scripts/ explicitly to
+# keep collection inside tests/.
+addopts = "-q --ignore=scripts"
+
+[tool.uv.sources]
+trezor = { path = "../../../python", editable = true }
