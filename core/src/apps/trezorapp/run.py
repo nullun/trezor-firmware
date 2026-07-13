@@ -23,7 +23,7 @@ if __debug__:
 
 if TYPE_CHECKING:
     from trezorio import IpcMessage
-    from typing import NoReturn
+    from typing import Any, NoReturn
 
 _SERVICE_WIRE_START = const(0)
 _SERVICE_WIRE_CONTINUE = const(1)
@@ -60,6 +60,13 @@ _SCHEME_ED25519_KECCAK = const(2)
 # `CRYPTO_RESULT_KIND_*` constants in firmware_micropython.rs.
 _CRYPTO_RESULT_KIND_PUBLIC_KEY = const(0)
 _CRYPTO_RESULT_KIND_SIGNATURE = const(1)
+
+# Framed sign op — the app sends a raw `[ signable ‖ trailer ]` payload so the
+# whole message is never serialised/copied. Op id and trailer layout match
+# `SIGN_FRAMED_OP` / `write_sign_trailer` in
+# `sdk/crates/trezor-app-sdk/src/crypto.rs`.
+_SERVICE_CRYPTO_SIGN_FRAMED = const(10)
+_SIGN_TRAILER_LEN = const(2 + 4 * 8)  # scheme(1) + path_len(1) + path(u32 × 8)
 
 
 def fn_id(service: int, message_id: int) -> int:
@@ -167,9 +174,26 @@ async def run(request: TrezorAppMessage) -> TrezorAppResponse:
             try:
                 if __debug__:
                     log.debug(__name__, "Processing crypto message")
-                obj = trezorcrypto_api.deserialize_crypto_message(data=bytes(msg.data))
+                # The framed sign op carries a raw `[ signable ‖ trailer ]`
+                # payload, not an rkyv message, so it is parsed directly rather
+                # than via `deserialize_crypto_message`.
+                # `None` for the framed op (parsed below); the rkyv-decoded
+                # message otherwise. Typed `Any` because only the non-framed
+                # branches read it, and there it is never `None`.
+                obj: Any = (
+                    None
+                    if message_id == _SERVICE_CRYPTO_SIGN_FRAMED
+                    else trezorcrypto_api.deserialize_crypto_message(data=bytes(msg.data))
+                )
 
-                if message_id == _SERVICE_CRYPTO_GET_XPUB:
+                if message_id == _SERVICE_CRYPTO_SIGN_FRAMED:
+                    try:
+                        result = await _sign_framed(msg.data)
+                        result_kind = _CRYPTO_RESULT_KIND_SIGNATURE
+                    except Exception:
+                        result = False
+
+                elif message_id == _SERVICE_CRYPTO_GET_XPUB:
                     assert len(obj) == 2
                     address_n: list[int] = obj[0]
                     xpub_magic: int = obj[1]
@@ -654,6 +678,30 @@ async def _verify_nonce_cache(nonce: bytes) -> bool:
 # The IPC schema does not change.
 
 
+async def _sign_framed(data: bytes) -> bytes:
+    """Sign a framed request `[ signable ‖ trailer ]`.
+
+    The fixed `_SIGN_TRAILER_LEN` suffix is
+    `[scheme:u8][path_len:u8][path:u32-le × path_len][zero-pad]`; the leading
+    bytes are the message to sign. This avoids serialising (copying) the whole
+    message the way the rkyv `SignMessage` op does. Layout matches
+    `write_sign_trailer` in `sdk/crates/trezor-app-sdk/src/crypto.rs`.
+    """
+    view = memoryview(data)
+    if len(view) < _SIGN_TRAILER_LEN:
+        raise DataError("Sign request too short")
+    trailer = bytes(view[-_SIGN_TRAILER_LEN:])
+    scheme = trailer[0]
+    path_len = trailer[1]
+    address_n = [
+        int.from_bytes(trailer[2 + i * 4 : 6 + i * 4], "little") for i in range(path_len)
+    ]
+    # The message is borrowed (memoryview) — never copied — and handed straight
+    # to the signer.
+    message = view[:-_SIGN_TRAILER_LEN]
+    return await _sign_message_for_scheme(scheme, address_n, message)
+
+
 def _validate_ed25519_path(address_n: list[int]) -> None:
     # SLIP-10 ed25519 keychains require fully-hardened paths.
     if not address_n or not all(i & 0x80000000 for i in address_n):
@@ -729,7 +777,7 @@ async def _sign_digest_for_scheme(
 async def _sign_message_for_scheme(
     scheme: int,
     address_n: list[int],
-    message: bytes,
+    message: bytes | memoryview,
 ) -> bytes:
     from trezor.crypto.curve import ed25519
 

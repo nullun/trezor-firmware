@@ -112,6 +112,64 @@ fn ecdsa_recover(
 }
 
 // ============================================================================
+// Framed (zero-copy) sign path
+// ============================================================================
+//
+// `sign_message` above rkyv-serialises the whole request, which copies the
+// message onto the heap — untenable for a large signable (e.g. an Algorand
+// application transaction) on the SDK's small heap. The framed path avoids it:
+// the caller stages `[ signable ‖ trailer ]` contiguously in its own buffer and
+// hands that slice straight to the IPC — no serialisation copy, no heap. The
+// leading bytes are the message to sign; the fixed trailer carries the scheme
+// and derivation path. The op id and trailer layout are hand-synced with the
+// Python handler in `apps/trezorapp/run.py`.
+
+/// Crypto op id for the framed sign request. Matches
+/// `_SERVICE_CRYPTO_SIGN_FRAMED` in `run.py`.
+pub const SIGN_FRAMED_OP: u16 = 10;
+
+/// Maximum derivation-path components the sign trailer can carry.
+pub const SIGN_TRAILER_MAX_PATH: usize = 8;
+
+/// Fixed trailer length: `scheme(1) + path_len(1) + path(u32 × MAX)`.
+pub const SIGN_TRAILER_LEN: usize = 2 + 4 * SIGN_TRAILER_MAX_PATH;
+
+/// Write the fixed sign trailer `[scheme][path_len][path…][zero-pad]` into the
+/// first [`SIGN_TRAILER_LEN`] bytes of `buf` (placed immediately after a staged
+/// signable). Errors if the path is longer than the trailer allows.
+pub fn write_sign_trailer(buf: &mut [u8], scheme: Scheme, address_n: &[u32]) -> Result<()> {
+    if address_n.len() > SIGN_TRAILER_MAX_PATH || buf.len() < SIGN_TRAILER_LEN {
+        return Err(Error::DataError("Sign trailer does not fit"));
+    }
+    buf[..SIGN_TRAILER_LEN].fill(0);
+    buf[0] = scheme as u8;
+    buf[1] = address_n.len() as u8;
+    for (i, c) in address_n.iter().enumerate() {
+        buf[2 + i * 4..2 + i * 4 + 4].copy_from_slice(&c.to_le_bytes());
+    }
+    Ok(())
+}
+
+/// Sign a pre-framed request `[ signable ‖ trailer ]` (see
+/// [`write_sign_trailer`]). The whole slice is sent as the IPC payload with no
+/// serialisation copy; the core reads the trailer, signs the leading message,
+/// and returns the 64-byte signature.
+pub fn ed25519_sign_framed(request: &[u8]) -> Result<[u8; 64]> {
+    let message = IpcMessage::new(SIGN_FRAMED_OP, request);
+    let result = services_or_die().call(CoreIpcService::Crypto, &message, Timeout::max())?;
+    let archived = unwrap!(rkyv::access::<Archived<TrezorCryptoResultRef>, Failure>(
+        result.data()
+    ));
+    match archived {
+        Archived::<TrezorCryptoResultRef>::SignatureBytes(sig) => sig
+            .as_ref()
+            .try_into()
+            .map_err(|_| Error::DataError("Unexpected ed25519 signature length")),
+        _ => Err(Error::DataError("Failed to sign message")),
+    }
+}
+
+// ============================================================================
 // Public crypto Functions
 // ============================================================================
 
