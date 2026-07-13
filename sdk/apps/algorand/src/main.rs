@@ -70,10 +70,9 @@ const MAX_TXN_GROUP_BYTES: usize = 96 * 1024;
 const SIGN_PREFIX_LEN: usize = TXN_DOMAIN.len();
 
 /// Framing added around a single transaction when it is sent to core to be
-/// signed: the rkyv `SignMessage` envelope (scheme + `address_n` + slice
-/// headers), the kernel IPC queue-item header, and the `TXN_DOMAIN` prefix.
-/// Comfortably covers the ~130 B actually used; the slack is harmless — no real
-/// Algorand transaction comes near this size.
+/// signed: the fixed sign trailer (`crypto::SIGN_TRAILER_LEN` — scheme +
+/// derivation path), the kernel IPC queue-item header, and the `TXN_DOMAIN`
+/// prefix. Comfortably covers what is actually used; the slack is harmless.
 const SIGN_IPC_FRAMING: usize = 512;
 
 /// Largest single transaction the device can sign. Every transaction is signed
@@ -93,13 +92,16 @@ const MAX_SINGLE_TXN_BYTES: usize = 32 * 1024 - SIGN_IPC_FRAMING;
 /// `"TX" ‖ map` message is already contiguous, so it is signed with no
 /// copy — the zero-copy layout tiny-algo's `parse_signable`/`signable` is
 /// built around.
-static mut SIGN_STAGE: [u8; SIGN_PREFIX_LEN + MAX_TXN_GROUP_BYTES] =
-    [0u8; SIGN_PREFIX_LEN + MAX_TXN_GROUP_BYTES];
+/// Sized for `[ "TX" | body ]` plus the trailing sign trailer appended in
+/// place when framing the request (see `stage_sign_request`).
+static mut SIGN_STAGE: [u8; SIGN_PREFIX_LEN + MAX_TXN_GROUP_BYTES + crypto::SIGN_TRAILER_LEN] =
+    [0u8; SIGN_PREFIX_LEN + MAX_TXN_GROUP_BYTES + crypto::SIGN_TRAILER_LEN];
 
 /// Scratch for signing one member of an atomic group, staged as
-/// `[ "TX" | member ]`. Standalone transactions never touch this.
-static mut SIGN_MEMBER: [u8; SIGN_PREFIX_LEN + MAX_SINGLE_TXN_BYTES] =
-    [0u8; SIGN_PREFIX_LEN + MAX_SINGLE_TXN_BYTES];
+/// `[ "TX" | member ]` plus the trailing sign trailer. Standalone
+/// transactions never touch this.
+static mut SIGN_MEMBER: [u8; SIGN_PREFIX_LEN + MAX_SINGLE_TXN_BYTES + crypto::SIGN_TRAILER_LEN] =
+    [0u8; SIGN_PREFIX_LEN + MAX_SINGLE_TXN_BYTES + crypto::SIGN_TRAILER_LEN];
 
 /// Copy `data` into the staging buffer body at offset `at`. Callers must
 /// keep `at + data.len() <= MAX_TXN_GROUP_BYTES`.
@@ -125,28 +127,37 @@ unsafe fn stage_body(len: usize) -> &'static [u8] {
     }
 }
 
-/// Write the domain prefix into the reserved slot and return the contiguous
-/// `"TX" ‖ body` message for a standalone transaction — the exact bytes to
-/// sign, with no copy.
+/// Frame a standalone transaction as a sign request in place: write the `"TX"`
+/// domain prefix into the reserved slot, append the fixed sign trailer (scheme
+/// + `address_n`) after the body, and return the contiguous
+/// `[ "TX" ‖ body ‖ trailer ]` slice to hand straight to the IPC — no copy, no
+/// heap. The leading `[ "TX" ‖ body ]` is the message the core signs.
 ///
-/// SAFETY: single-threaded extapp. The prefix write touches only
-/// `[..SIGN_PREFIX_LEN]`, disjoint from the parsed body at
-/// `[SIGN_PREFIX_LEN..]`, and uses raw pointers so it never aliases a live
-/// `&` to the body.
-unsafe fn stage_signable(len: usize) -> &'static [u8] {
+/// SAFETY: single-threaded extapp. The writes touch only the reserved prefix
+/// and the trailer region past the body, both disjoint from the parsed body,
+/// via raw pointers that never alias a live `&` to the body.
+unsafe fn stage_sign_request(len: usize, address_n: &[u32]) -> Result<&'static [u8]> {
     unsafe {
         let base = core::ptr::addr_of_mut!(SIGN_STAGE) as *mut u8;
         core::ptr::copy_nonoverlapping(TXN_DOMAIN.as_ptr(), base, SIGN_PREFIX_LEN);
-        core::slice::from_raw_parts(base as *const u8, SIGN_PREFIX_LEN + len)
+        let signable_len = SIGN_PREFIX_LEN + len;
+        let trailer =
+            core::slice::from_raw_parts_mut(base.add(signable_len), crypto::SIGN_TRAILER_LEN);
+        crypto::write_sign_trailer(trailer, crypto::Scheme::Ed25519, address_n)?;
+        Ok(core::slice::from_raw_parts(
+            base as *const u8,
+            signable_len + crypto::SIGN_TRAILER_LEN,
+        ))
     }
 }
 
-/// Stage `[ "TX" | member ]` into [`SIGN_MEMBER`] and return it for signing.
-/// Rejects a member larger than [`MAX_SINGLE_TXN_BYTES`].
+/// Stage `[ "TX" | member ]` into [`SIGN_MEMBER`], append the sign trailer, and
+/// return the `[ "TX" ‖ member ‖ trailer ]` sign request. Rejects a member
+/// larger than [`MAX_SINGLE_TXN_BYTES`].
 ///
 /// SAFETY: single-threaded extapp; the returned slice is used immediately
 /// (to sign) before the next member overwrites the buffer.
-fn member_signable(member: &[u8]) -> Result<&'static [u8]> {
+fn member_sign_request(member: &[u8], address_n: &[u32]) -> Result<&'static [u8]> {
     if member.len() > MAX_SINGLE_TXN_BYTES {
         return Err(Error::DataError("Transaction too large to sign"));
     }
@@ -154,9 +165,13 @@ fn member_signable(member: &[u8]) -> Result<&'static [u8]> {
         let base = core::ptr::addr_of_mut!(SIGN_MEMBER) as *mut u8;
         core::ptr::copy_nonoverlapping(TXN_DOMAIN.as_ptr(), base, SIGN_PREFIX_LEN);
         core::ptr::copy_nonoverlapping(member.as_ptr(), base.add(SIGN_PREFIX_LEN), member.len());
+        let signable_len = SIGN_PREFIX_LEN + member.len();
+        let trailer =
+            core::slice::from_raw_parts_mut(base.add(signable_len), crypto::SIGN_TRAILER_LEN);
+        crypto::write_sign_trailer(trailer, crypto::Scheme::Ed25519, address_n)?;
         Ok(core::slice::from_raw_parts(
             base as *const u8,
-            SIGN_PREFIX_LEN + member.len(),
+            signable_len + crypto::SIGN_TRAILER_LEN,
         ))
     }
 }
@@ -559,26 +574,27 @@ fn sign_transactions_inner(address_n: &[u32], total: usize, sign_mask: u16) -> R
             continue;
         }
         let txn = txn_at(i);
-        // The message to sign is `TXN_DOMAIN ‖ txn map`. A standalone
-        // transaction already sits behind the reserved prefix slot in
-        // `SIGN_STAGE`, so sign it in place with no copy; a group member is
-        // packed against its neighbours, so stage `"TX" ‖ member` into the
-        // per-member scratch first.
-        let msg: &[u8] = if n == 1 {
-            // A standalone txn signs in place from SIGN_STAGE (staged up to the
+        // The message to sign is `TXN_DOMAIN ‖ txn map`, framed as a sign
+        // request `[ "TX" ‖ txn ‖ trailer ]` sent straight to core with no
+        // copy and no heap. A standalone transaction is framed in place in
+        // `SIGN_STAGE`; a group member is packed against its neighbours, so it
+        // is staged into the per-member scratch first.
+        let request: &[u8] = if n == 1 {
+            // A standalone txn frames in place from SIGN_STAGE (staged up to the
             // 96 KiB group cap), but the sign request must still fit core's IPC
             // inbox, so it is bound by the single-transaction cap like a member.
             if total > MAX_SINGLE_TXN_BYTES {
                 return Err(Error::DataError("Transaction too large to sign"));
             }
-            // SAFETY: single-threaded extapp; writes only the reserved
-            // prefix slot, disjoint from the body `txns` borrows.
-            unsafe { stage_signable(total) }
+            // SAFETY: single-threaded extapp; writes only the reserved prefix
+            // and the trailer past the body, disjoint from the body `txns`
+            // borrows.
+            unsafe { stage_sign_request(total, address_n)? }
         } else {
-            member_signable(txn.bytes())?
+            member_sign_request(txn.bytes(), address_n)?
         };
 
-        let sig = crypto::ed25519_sign(address_n, msg)?;
+        let sig = crypto::ed25519_sign_framed(request)?;
         let auth = (txn.sender() != Some(our_addr)).then_some(&pk);
         response_len =
             wire::write_signature_record(&mut response_buf, response_len, i as u32, &sig, auth);
