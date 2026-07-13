@@ -12,6 +12,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "algorand"
+version = "0.1.0"
+dependencies = [
+ "num_enum",
+ "tiny-algo",
+ "trezor-app-sdk",
+ "ufmt",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.102"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -822,6 +832,10 @@ dependencies = [
  "rustix",
  "windows-sys",
 ]
+
+[[package]]
+name = "tiny-algo"
+version = "0.1.0"
 
 [[package]]
 name = "tinyvec"

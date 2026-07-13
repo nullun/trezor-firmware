@@ -1,0 +1,71 @@
+cargo-features = ["panic-immediate-abort"]
+
+[package]
+name = "algorand"
+version = "0.1.0"
+edition = "2024"
+
+[package.metadata.trezor]
+id = "trezor.algorand.co"
+name = "Algorand"
+vendor = "Algorand Foundation"
+stack-size = 16384
+heap-size = 16384
+app-ring = 0
+curves = ["ed25519"]
+paths = [
+    # SLIP-10 ed25519 accounts, fully hardened:
+    # m/44'/283'/account'/change'/address_index'
+    "m/44'/283'/account'/change'/address_index'",
+]
+slip44-id = 283
+
+[dependencies]
+# The SDK owns the `#[global_allocator]` (a fixed static heap in its
+# `app_runtime`); the app must not declare its own. The heap is used only for
+# the SDK's transient IPC `AlignedVec` — signing embeds the whole `"TX" || txn`
+# in one `SignMessage`. The app's own staging is allocation-free (`SIGN_STAGE`).
+trezor-app-sdk = { path = "../../crates/trezor-app-sdk" }
+num_enum = { version = "0.7.5", default-features = false }
+ufmt = { version = "0.2.0", default-features = false }
+# Algorand no_std codec: address derivation/encoding, msgpack txn
+# parse + validate, SHA-512/256, base32/base64. Protobuf wire codecs
+# for the two app-level messages are hand-rolled in `mod wire`, so
+# neither prost nor prost-build is needed.
+tiny-algo = { git = "https://github.com/nullun/tiny-algo", rev = "7cbffce54ecf33a1c3fff747fb2508873d1b2dd5", default-features = false, features = ["payment", "keyreg", "asset-transfer", "asset-freeze", "asset-config", "application", "validate", "base64"] }
+
+[dev-dependencies]
+tiny-algo = { git = "https://github.com/nullun/tiny-algo", rev = "7cbffce54ecf33a1c3fff747fb2508873d1b2dd5", default-features = false, features = ["payment", "keyreg", "asset-transfer", "asset-freeze", "asset-config", "application", "write", "validate", "base64"] }
+
+[features]
+# --------------------------------------------------------------------------
+# Model features
+# --------------------------------------------------------------------------
+model_t3t1 = []
+model_t3w1 = []
+
+# --------------------------------------------------------------------------
+# Language features
+# --------------------------------------------------------------------------
+lang_en = []
+lang_cs = []
+
+# --------------------------------------------------------------------------
+# Log level features
+# --------------------------------------------------------------------------
+log_level_error = ['trezor-app-sdk/log_level_error']
+log_level_warn = ['trezor-app-sdk/log_level_warn']
+log_level_info = ['trezor-app-sdk/log_level_info']
+log_level_debug = ['trezor-app-sdk/log_level_debug']
+
+# --------------------------------------------------------------------------
+# Selectable features
+# --------------------------------------------------------------------------
+emulator = []
+test = ["dev_keys", 'trezor-app-sdk/test', 'trezor-app-sdk/log_level_debug']
+debug = ['trezor-app-sdk/debug']
+
+# --------------------------------------------------------------------------
+# Automatically derived features (do not enable from outside)
+# --------------------------------------------------------------------------
+dev_keys = []

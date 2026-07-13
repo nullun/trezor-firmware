@@ -1,0 +1,21 @@
+syntax = "proto2";
+package hw.trezor.messages;
+
+/**
+ * Mapping between the Algorand extapp's wire identifier and its protobuf
+ * messages.
+ *
+ * These IDs are app-local: they match the `AlgorandMessages` enum in
+ * `src/main.rs` and travel in the `message_id` field of the
+ * `TrezorAppMessage`/`TrezorAppResponse` envelope, not the firmware's
+ * global MessageType registry. pb2py turns this enum into the
+ * `MessageType` IntEnum that the test client uses to map a message class
+ * to its numeric id.
+ */
+enum MessageType {
+  MessageType_AlgorandGetPublicKey             = 0;
+  MessageType_AlgorandPublicKey                = 1;
+  MessageType_AlgorandSignTransactions         = 2;
+  MessageType_AlgorandTransactionSignatures    = 3;
+  MessageType_AlgorandContinueSignTransactions = 4;
+}

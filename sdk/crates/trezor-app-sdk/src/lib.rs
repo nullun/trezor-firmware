@@ -94,6 +94,10 @@ mod app_runtime;
 
 #[cfg(feature = "app")]
 pub use app_runtime::{Align, Error, Result, ResultExt};
+// Raw IPC access for payloads the wire helpers can't express (e.g. an error
+// response whose body is composed at runtime).
+#[cfg(feature = "app")]
+pub use ipc::IpcMessage;
 #[cfg(feature = "app")]
 pub use low_level_api::ApiError;
 #[cfg(feature = "app")]

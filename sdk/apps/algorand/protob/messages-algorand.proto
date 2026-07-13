@@ -1,0 +1,114 @@
+syntax = "proto2";
+
+package algorand;
+
+/**
+ * Request: Get raw ed25519 public key for the given BIP-32 path.
+ * Zero validation, no address checksum — returns the 32-byte point as
+ * both raw bytes and a hex string.
+ * @start
+ * @next AlgorandPublicKey
+ * @next Failure
+ */
+message AlgorandGetPublicKey {
+	// BIP-32 path to derive the key (must be fully hardened for ed25519).
+	repeated uint32 address_n = 1;
+	// Show the public key on the device display.
+	optional bool show_display = 2;
+}
+
+/**
+ * Response: Raw ed25519 public key and the canonical Algorand address.
+ * @end
+ */
+message AlgorandPublicKey {
+	// 32-byte raw ed25519 public key.
+	required bytes public_key = 1;
+	// Canonical 58-character Algorand address: base32 of
+	// `pubkey || SHA512_256(pubkey)[28..32]` (no padding).
+	required string address = 2;
+}
+
+/**
+ * Request: Sign one or more Algorand transactions.
+ *
+ * `transactions` carries a concatenation of 1..=16 unsigned canonical
+ * msgpack transaction maps. For a single transaction, just that one
+ * txn's bytes. For an atomic group (2..=16), all member txns
+ * concatenated in canonical order, each with its `grp` field set to
+ * the group ID — the device recomputes the group ID and verifies each
+ * member matches before signing.
+ *
+ * Each transaction is parsed and validated on-device; the device
+ * prepends the "TX" domain-separator before signing and returns one
+ * signature per input transaction in the same order.
+ * @start
+ * @next AlgorandTransactionSignatures
+ * @next Failure
+ */
+message AlgorandSignTransactions {
+	// BIP-32 path to derive the key (must be fully hardened for ed25519).
+	repeated uint32 address_n = 1;
+	// Concatenated canonical msgpack of 1..=16 unsigned transactions.
+	// When `total_size` is set and larger than this field, this is only
+	// the first chunk and the host streams the rest via
+	// AlgorandContinueSignTransactions.
+	required bytes transactions = 2;
+	// Total byte length of the full transaction payload. Present only for
+	// chunked uploads; absent for single-message requests.
+	optional uint32 total_size = 3;
+	// Zero-based indices, into the transaction list above, that the host
+	// wants signatures for. Lets the device sign a subset of an atomic
+	// group — e.g. only the members whose sender is rekeyed to this
+	// account — while still seeing the whole group to recompute and
+	// verify the group ID. When empty, every transaction is signed (the
+	// common single-signer case).
+	repeated uint32 sign_indices = 4;
+}
+
+/**
+ * Request: Next chunk of a chunked transaction upload.
+ *
+ * Sent in response to an AlgorandContinueSignTransactions reply from the
+ * device, until the accumulated payload reaches the `total_size`
+ * advertised in the opening AlgorandSignTransactions.
+ * @next AlgorandContinueSignTransactions
+ * @next AlgorandTransactionSignatures
+ * @next Failure
+ */
+message AlgorandContinueSignTransactions {
+	// Next chunk of canonical msgpack transaction bytes. Optional because the
+	// device reuses this message id as an empty "send the next chunk" signal in
+	// the response direction; the host always sets it on a request, and the
+	// device enforces its presence when decoding a request (see mod wire).
+	optional bytes data = 1;
+}
+
+/**
+ * Response: one signature record per signed transaction.
+ *
+ * When the request omitted `sign_indices`, this carries one record for
+ * every input transaction, in order. When a subset was requested, it
+ * carries one record per selected index — each record names the index it
+ * signs, so the host can reassemble the group.
+ * @end
+ */
+message AlgorandTransactionSignatures {
+	// One per signed transaction (1..=16).
+	repeated AlgorandTransactionSignature signatures = 1;
+}
+
+/**
+ * A single signature over one transaction.
+ */
+message AlgorandTransactionSignature {
+	// Zero-based index of the signed transaction in the request's list.
+	required uint32 index = 1;
+	// 64-byte ed25519 signature over "TX" || canonical-msgpack(txn).
+	required bytes signature = 2;
+	// 32-byte public key of the signer, present only when the signer
+	// differs from the transaction's sender (the sender is rekeyed to
+	// this key). The host copies it into the SignedTxn `sgnr` field.
+	// Absent when the signer is the sender.
+	optional bytes auth_address = 3;
+}
