@@ -27,3 +27,9 @@ panic = "immediate-abort"
 [profile.test]
 split-debuginfo = "off"
 debug = 2
+
+# The app pins a tiny-algo git rev that predates the zero-copy
+# `signable`/`parse_signable` API it now uses; override the dependency to a
+# local checkout until a rev with that API is published, then drop this patch.
+[patch."https://github.com/nullun/tiny-algo"]
+tiny-algo = { path = "/Users/steve/GitHub/nullun/tiny-algo/crates/tiny-algo" }
