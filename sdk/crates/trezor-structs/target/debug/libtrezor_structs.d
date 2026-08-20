@@ -1,0 +1,1 @@
+/Users/steve/Development/AI/TrezorModular/trezor-firmware/sdk/crates/trezor-structs/target/debug/libtrezor_structs.rlib: /Users/steve/Development/AI/TrezorModular/trezor-firmware/sdk/crates/trezor-structs/src/lib.rs

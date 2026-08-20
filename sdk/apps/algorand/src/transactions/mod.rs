@@ -24,7 +24,7 @@ use tiny_algo::address::{Address, ENCODED_LEN as ADDRESS_LEN};
 use tiny_algo::base64;
 use trezor_app_sdk::{Error, Result, ui, ui::Property, unwrap};
 
-use crate::button_request::ButtonRequestType;
+use crate::proto::ButtonRequestType;
 use crate::strutil;
 use crate::uformat;
 

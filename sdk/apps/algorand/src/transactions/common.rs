@@ -18,7 +18,7 @@ use tiny_algo::txn::{Transaction, TransactionType};
 use trezor_app_sdk::{Result, ui, ui::Property};
 
 use super::address_to_str;
-use crate::button_request::ButtonRequestType;
+use crate::proto::ButtonRequestType;
 use crate::strutil::{self, PropVec};
 use crate::uformat;
 

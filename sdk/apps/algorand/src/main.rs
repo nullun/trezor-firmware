@@ -19,24 +19,14 @@ use trezor_app_sdk::{
     CORE_SERVICE, Error, IpcMessage, Result, crypto, error, info, ui,
 };
 
-mod button_request;
+// Include generated code
+pub(crate) mod proto;
+
 mod strutil;
 mod transactions;
 mod wire;
 
-use button_request::ButtonRequestType;
-
-#[derive(Copy, Clone, PartialEq, Eq, num_enum::FromPrimitive, num_enum::IntoPrimitive)]
-#[repr(u16)]
-enum AlgorandMessages {
-    GetPublicKey = 0,
-    PublicKey = 1,
-    SignTransactions = 2,
-    TransactionSignatures = 3,
-    ContinueSignTransactions = 4,
-    #[num_enum(catch_all)]
-    Unknown(u16),
-}
+use proto::{AlgorandMessages, ButtonRequestType};
 
 // The app's own logic is allocation-free: transactions are staged into fixed
 // static buffers (`SIGN_STAGE`/`SIGN_MEMBER`) and every display string is built

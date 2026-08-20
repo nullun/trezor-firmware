@@ -1,0 +1,44 @@
+syntax = "proto2";
+package hw.trezor.common;
+
+/**
+ * Response: Device is waiting for HW button press.
+ *
+ * Trimmed to the one message this app references: `build.rs` generates the
+ * Rust `ButtonRequestType` codes from the nested enum below, so the values
+ * the app sends with each confirmation screen cannot drift from the wire
+ * spec. The enum mirrors the firmware's `common.proto` and must keep the
+ * same names and values.
+ * @auxstart
+ * @next ButtonAck
+ */
+message ButtonRequest {
+    optional ButtonRequestType code = 1;  // enum identifier of the screen (deprecated)
+    optional uint32 pages = 2;            // if the screen is paginated, number of pages
+    optional string name = 4;             // name of the screen
+
+    /**
+     * Type of button request
+     */
+    enum ButtonRequestType {
+        Other = 1;
+        FeeOverThreshold = 2;
+        ConfirmOutput = 3;
+        ResetDevice = 4;
+        ConfirmWord = 5;
+        WipeDevice = 6;
+        ProtectCall = 7;
+        SignTx = 8;
+        FirmwareCheck = 9;
+        Address = 10;
+        PublicKey = 11;
+        MnemonicWordCount = 12;
+        MnemonicInput = 13;
+        UnknownDerivationPath = 15;
+        RecoveryHomepage = 16;
+        Success = 17;
+        Warning = 18;
+        PassphraseEntry = 19;
+        PinEntry = 20;
+    }
+}
