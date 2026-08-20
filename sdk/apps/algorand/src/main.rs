@@ -22,10 +22,12 @@ use trezor_app_sdk::{
 // Include generated code
 pub(crate) mod proto;
 
+mod paths;
 mod strutil;
 mod transactions;
 mod wire;
 
+use paths::{ALGORAND_PATH_LEN, check_path};
 use proto::{AlgorandMessages, ButtonRequestType};
 
 // The app's own logic is allocation-free: transactions are staged into fixed
@@ -34,20 +36,6 @@ use proto::{AlgorandMessages, ButtonRequestType};
 // (signing embeds the whole `"TX" || txn` in one `SignMessage`). The SDK owns
 // the `#[global_allocator]` and its fixed heap, so the app declares none of its
 // own — a max-size app transaction must fit within that SDK heap.
-
-/// BIP-32 hardened-derivation bit.
-const HARDENED: u32 = 0x8000_0000;
-
-/// SLIP-44 coin type for Algorand (`283'`).
-const SLIP44_ALGORAND: u32 = HARDENED | 283;
-
-/// BIP-44 purpose constant (`44'`).
-const PURPOSE_BIP44: u32 = HARDENED | 44;
-
-/// BIP-32 path length the Algorand app accepts:
-/// `m/44'/283'/account'/change'/index'`. Shared by `check_path` and the
-/// chunked-upload state so the path-buffer sizing tracks the validator.
-const ALGORAND_PATH_LEN: usize = 5;
 
 /// Hard cap on `total_size` for chunked-upload requests, and the size of
 /// the staging buffer body. A 16-application atomic group with large
@@ -164,29 +152,6 @@ fn member_sign_request(member: &[u8], address_n: &[u32]) -> Result<&'static [u8]
             signable_len + crypto::SIGN_TRAILER_LEN,
         ))
     }
-}
-
-/// Accept only the shape Pera Wallet and the Ledger Algorand app
-/// produce, so signatures from this device round-trip with the keys
-/// those wallets derive for the same seed. ed25519 has no unhardened
-/// derivation, so a non-hardened component could never have produced
-/// a usable key anyway.
-fn check_path(address_n: &[u32]) -> Result<()> {
-    if address_n.len() != ALGORAND_PATH_LEN {
-        return Err(Error::DataError(
-            "BIP-32 path must be m/44'/283'/account'/change'/index'",
-        ));
-    }
-    if address_n[0] != PURPOSE_BIP44 {
-        return Err(Error::DataError("BIP-32 path must start with 44'"));
-    }
-    if address_n[1] != SLIP44_ALGORAND {
-        return Err(Error::DataError("BIP-32 path must use Algorand coin type 283'"));
-    }
-    if !address_n.iter().all(|&i| i & HARDENED != 0) {
-        return Err(Error::DataError("BIP-32 path must be fully hardened"));
-    }
-    Ok(())
 }
 
 fn send_wire_end(id: AlgorandMessages, bytes: &[u8]) -> Result<()> {
