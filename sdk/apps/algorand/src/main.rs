@@ -201,23 +201,34 @@ fn handle_get_public_key(request_data: &[u8]) -> Result<()> {
     let address = transactions::address_to_str(&Address::from_pubkey(&pk), &mut addr_buf);
 
     if request.show_display {
-        ui::error_if_not_confirmed(ui::confirm_value(ui::ConfirmValue::new(
-            "Algorand address",
+        // TODO: template translation
+        let mut subtitle_buf = [0u8; strutil::LABEL_LEN];
+        let subtitle = uformat!(&mut subtitle_buf, "{} address", paths::COIN);
+        let mut account_buf = [0u8; paths::ACCOUNT_NAME_LEN];
+        let account = paths::account_name(request.address_n.as_slice(), &mut account_buf);
+        let mut path_buf = [0u8; paths::PATH_STR_LEN];
+        let path = paths::format_path(request.address_n.as_slice(), &mut path_buf);
+        ui::error_if_not_confirmed(ui::show_address(ui::ShowAddress::new(
+            address,
             address,
             None,
-            Some("show_address"),
-            ButtonRequestType::Address.into(),
+            Some(subtitle),
+            Some(account),
+            Some(path),
+            &[],
             true,
-            None,
-            None,
+            ButtonRequestType::Other.into(),
             false,
-            false,
-            false,
-            false,
-            false,
-            false,
-            None,
         ))?)?;
+
+        ui::show_success(ui::ShowSuccess::new(
+            tr!("words__title_done"),
+            tr!("address__confirmed"),
+            tr!("instructions__continue_in_app"),
+            Some(3200),
+            None,
+            ButtonRequestType::Other.into(),
+        ))?;
     }
 
     let mut response_buf = [0u8; wire::PUBLIC_KEY_RESPONSE_LEN];
@@ -558,6 +569,15 @@ fn sign_transactions_inner(address_n: &[u32], total: usize, sign_mask: u16) -> R
         response_len =
             wire::write_signature_record(&mut response_buf, response_len, i as u32, &sig, auth);
     }
+
+    ui::show_success(ui::ShowSuccess::new(
+        tr!("words__title_done"),
+        tr!("send__transaction_signed"),
+        tr!("instructions__continue_in_app"),
+        Some(3200),
+        None,
+        ButtonRequestType::Other.into(),
+    ))?;
 
     send_wire_end(
         AlgorandMessages::TransactionSignatures,
