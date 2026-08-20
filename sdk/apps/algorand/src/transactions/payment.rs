@@ -32,7 +32,7 @@ pub fn confirm_payment(
     let title: &str = if total > 1 {
         uformat!(&mut title_buf, "Payment {} of {}", index + 1, total)
     } else {
-        "Confirm payment"
+        tr!("algorand__title_payment")
     };
     let mut amount_buf = [0u8; ALGO_FMT_LEN];
     let mut fee_buf = [0u8; ALGO_FMT_LEN];
@@ -46,10 +46,10 @@ pub fn confirm_payment(
     // Close-remainder-to empties the account; it is shown as a dedicated
     // danger gate in `common::run_danger_gates`, not as a field here.
     let props = [
-        Property::new("Amount", amount_str, false),
-        Property::new("Fee", fee_str, false),
-        Property::new("From", from, true),
-        Property::new("To", to, true),
+        Property::new(tr!("words__amount"), amount_str, false),
+        Property::new(tr!("algorand__fee"), fee_str, false),
+        Property::new(tr!("algorand__from"), from, true),
+        Property::new(tr!("algorand__to"), to, true),
     ];
     common::finalize(title, &props, "confirm_payment", txn, total, ctx)
 }

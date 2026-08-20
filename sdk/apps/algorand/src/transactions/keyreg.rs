@@ -32,7 +32,7 @@ pub fn confirm_keyreg(
     let title: &str = if is_group {
         uformat!(&mut title_buf, "Key reg {} of {}", index + 1, total)
     } else {
-        "Confirm key registration"
+        tr!("algorand__title_keyreg")
     };
 
     let nonpart = body.nonparticipation();
@@ -46,9 +46,9 @@ pub fn confirm_keyreg(
 
     if nonpart {
         let props = [
-            Property::new("Status", "Offline (nonparticipating)", false),
-            Property::new("Fee", fee_str, false),
-            Property::new("From", from, true),
+            Property::new(tr!("algorand__status"), tr!("algorand__status_offline_nonpart"), false),
+            Property::new(tr!("algorand__fee"), fee_str, false),
+            Property::new(tr!("algorand__from"), from, true),
         ];
         common::finalize(title, &props, "confirm_keyreg", txn, total, ctx)
     } else if let Some(vpk) = vote_pk {
@@ -73,22 +73,22 @@ pub fn confirm_keyreg(
         let sp_str = core::str::from_utf8(&sp_buf).expect("base64 is ASCII");
 
         let props = [
-            Property::new("Fee", fee_str, false),
-            Property::new("From", from, true),
-            Property::new("Vote key", vk_str, true),
-            Property::new("Selection key", sk_str, true),
-            Property::new("State proof key", sp_str, true),
-            Property::new("Vote first", vote_first, false),
-            Property::new("Vote last", vote_last, false),
-            Property::new("Key dilution", vote_kd, false),
+            Property::new(tr!("algorand__fee"), fee_str, false),
+            Property::new(tr!("algorand__from"), from, true),
+            Property::new(tr!("algorand__vote_key"), vk_str, true),
+            Property::new(tr!("algorand__selection_key"), sk_str, true),
+            Property::new(tr!("algorand__state_proof_key"), sp_str, true),
+            Property::new(tr!("algorand__vote_first"), vote_first, false),
+            Property::new(tr!("algorand__vote_last"), vote_last, false),
+            Property::new(tr!("algorand__key_dilution"), vote_kd, false),
         ];
         common::finalize(title, &props, "confirm_keyreg", txn, total, ctx)
     } else {
         // Go offline (no keys, no nonpart flag).
         let props = [
-            Property::new("Status", "Offline", false),
-            Property::new("Fee", fee_str, false),
-            Property::new("From", from, true),
+            Property::new(tr!("algorand__status"), tr!("algorand__status_offline"), false),
+            Property::new(tr!("algorand__fee"), fee_str, false),
+            Property::new(tr!("algorand__from"), from, true),
         ];
         common::finalize(title, &props, "confirm_keyreg", txn, total, ctx)
     }

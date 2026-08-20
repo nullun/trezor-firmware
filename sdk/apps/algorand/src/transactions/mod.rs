@@ -97,21 +97,21 @@ pub fn confirm_group_header(
     // can never commit — surface that rather than a misleading "+0" window.
     let mut validity_buf = [0u8; common::VALIDITY_LEN];
     let validity: &str = if window_end < window_start {
-        "Invalid"
+        tr!("algorand__invalid")
     } else {
         common::format_validity(window_start, window_end, &mut validity_buf)
     };
 
     let props = [
-        Property::new("Network", common::network_label(genesis_hash), false),
-        Property::new("Validity", validity, false),
-        Property::new("Group ID", gid_b64, true),
+        Property::new(tr!("algorand__network"), common::network_label(genesis_hash), false),
+        Property::new(tr!("algorand__validity"), validity, false),
+        Property::new(tr!("algorand__group_id"), gid_b64, true),
     ];
     ui::error_if_not_confirmed(ui::confirm_properties(ui::ConfirmProperties::new(
         title,
         &props,
         None,
-        Some("Continue"),
+        Some(tr!("buttons__continue")),
         false,
         Some("confirm_group"),
         ButtonRequestType::SignTx.into(),
@@ -139,13 +139,13 @@ pub fn confirm_sign_all(signed: usize, total: usize) -> Result<()> {
         )
     };
     ui::error_if_not_confirmed(ui::confirm_value(ui::ConfirmValue::new(
-        "Sign atomic group",
+        tr!("algorand__title_sign_group"),
         body,
         None,
         Some("sign_all"),
         ButtonRequestType::SignTx.into(),
         false,
-        Some("Sign all"),
+        Some(tr!("algorand__sign_all")),
         None,
         false,
         true,

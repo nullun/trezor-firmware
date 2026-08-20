@@ -22,6 +22,10 @@ use trezor_app_sdk::{
 // Include generated code
 pub(crate) mod proto;
 
+// Must come before the modules below so `tr!` is in scope for them.
+#[macro_use]
+pub(crate) mod translations;
+
 mod paths;
 mod strutil;
 mod transactions;

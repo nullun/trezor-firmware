@@ -55,9 +55,9 @@ pub fn confirm_application(
 
     let is_group = total > 1;
     let (prefix, solo_title) = if is_create {
-        ("App create", "Confirm app create")
+        ("App create", tr!("algorand__title_app_create"))
     } else {
-        ("App call", "Confirm app call")
+        ("App call", tr!("algorand__title_app_call"))
     };
     let mut title_buf = [0u8; strutil::LABEL_LEN];
     let title: &str = if is_group {
@@ -135,49 +135,49 @@ pub fn confirm_application(
 
     let mut props = PropVec::<16>::new();
     if !is_create {
-        props.push(Property::new("App ID", app_id_str, false));
+        props.push(Property::new(tr!("algorand__app_id"), app_id_str, false));
     }
-    props.push(Property::new("On completion", oc_label(oc), false));
-    props.push(Property::new("Fee", fee_str, false));
-    props.push(Property::new("From", from, true));
+    props.push(Property::new(tr!("algorand__on_completion"), oc_label(oc), false));
+    props.push(Property::new(tr!("algorand__fee"), fee_str, false));
+    props.push(Property::new(tr!("algorand__from"), from, true));
 
     if is_create {
         if let Some(len) = approval_len {
-            props.push(Property::new("Approval program", len, false));
+            props.push(Property::new(tr!("algorand__approval_program"), len, false));
         }
         if let Some(h) = approval_hash {
-            props.push(Property::new("Approval hash", h, true));
+            props.push(Property::new(tr!("algorand__approval_hash"), h, true));
         }
         if let Some(len) = clear_len {
-            props.push(Property::new("Clear program", len, false));
+            props.push(Property::new(tr!("algorand__clear_program"), len, false));
         }
         if let Some(h) = clear_hash {
-            props.push(Property::new("Clear hash", h, true));
+            props.push(Property::new(tr!("algorand__clear_hash"), h, true));
         }
         if let Some(s) = schema {
-            props.push(Property::new("State schema", s, false));
+            props.push(Property::new(tr!("algorand__state_schema"), s, false));
         }
         if let Some(e) = extra_str {
-            props.push(Property::new("Extra pages", e, false));
+            props.push(Property::new(tr!("algorand__extra_pages"), e, false));
         }
     }
 
     if blind {
-        props.push(Property::new("Args", args_str, false));
-        props.push(Property::new("Accounts", accounts_str, false));
+        props.push(Property::new(tr!("algorand__args"), args_str, false));
+        props.push(Property::new(tr!("algorand__accounts"), accounts_str, false));
         if has_foreign {
-            props.push(Property::new("Foreign apps/assets", "yes", false));
+            props.push(Property::new(tr!("algorand__foreign_refs"), tr!("algorand__yes"), false));
         }
         if has_boxes {
-            props.push(Property::new("Box refs", "yes", false));
+            props.push(Property::new(tr!("algorand__box_refs"), tr!("algorand__yes"), false));
         }
         if has_access {
-            props.push(Property::new("Access list", "yes", false));
+            props.push(Property::new(tr!("algorand__access_list"), tr!("algorand__yes"), false));
         }
-        props.push(Property::new("TxID", txid, true));
+        props.push(Property::new(tr!("algorand__txid"), txid, true));
     }
     if let Some(rv) = reject_version_str {
-        props.push(Property::new("Reject version", rv, false));
+        props.push(Property::new(tr!("algorand__reject_version"), rv, false));
     }
 
     if blind {

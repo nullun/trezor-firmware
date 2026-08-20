@@ -68,8 +68,8 @@ pub fn network_name(genesis_hash: &[u8; 32]) -> Option<&'static str> {
 /// accepted transaction, so the `None` arm is only defensive.
 pub fn network_label(genesis_hash: Option<&[u8; 32]>) -> &'static str {
     match genesis_hash {
-        Some(gh) => network_name(gh).unwrap_or("Unknown"),
-        None => "Unknown",
+        Some(gh) => network_name(gh).unwrap_or(tr!("algorand__unknown_network")),
+        None => tr!("algorand__unknown_network"),
     }
 }
 
@@ -135,34 +135,34 @@ pub fn finalize(
     // Flag a group member this device is *not* signing, so it reads as
     // context rather than something the user is authorising here.
     if !ctx.signing {
-        all.push(Property::new("Signed here", "No", false));
+        all.push(Property::new(tr!("algorand__signed_here"), tr!("algorand__no"), false));
     }
     // The account whose key authorises this transaction, when it isn't the
     // sender (a rekeyed account signing through us).
     if let Some(auth) = auth {
-        all.push(Property::new("Auth address", auth, true));
+        all.push(Property::new(tr!("algorand__auth_address"), auth, true));
     }
     if single {
         all.push(Property::new(
-            "Network",
+            tr!("algorand__network"),
             network_label(txn.genesis_hash()),
             false,
         ));
     }
     if let Some(validity) = validity {
-        all.push(Property::new("Validity", validity, false));
+        all.push(Property::new(tr!("algorand__validity"), validity, false));
     }
     if let Some(note) = note {
-        all.push(Property::new("Note", note, false));
+        all.push(Property::new(tr!("algorand__note"), note, false));
     }
     if txn.lease().is_some() {
-        all.push(Property::new("Lease", "set", false));
+        all.push(Property::new(tr!("algorand__lease"), tr!("algorand__lease_set"), false));
     }
 
     let (verb, hold) = if total > 1 {
-        (Some("Continue"), false)
+        (Some(tr!("buttons__continue")), false)
     } else {
-        (Some("Sign"), true)
+        (Some(tr!("algorand__sign")), true)
     };
     ui::error_if_not_confirmed(ui::confirm_properties(ui::ConfirmProperties::new(
         title,
@@ -212,7 +212,7 @@ pub fn run_danger_gates(txn: &Transaction<'_>) -> Result<()> {
             "This changes the signing key for the account.\n\nAfter signing, this address will control the account:\n{}\n\nYou may permanently lose access.",
             address_to_str(&rekey, &mut buf),
         );
-        danger_gate("Rekey account", body, "confirm_rekey", "Allow rekey")?;
+        danger_gate(tr!("algorand__title_rekey"), body, "confirm_rekey", tr!("algorand__allow_rekey"))?;
     }
 
     match txn.tx_type() {
@@ -225,7 +225,7 @@ pub fn run_danger_gates(txn: &Transaction<'_>) -> Result<()> {
                     "The entire remaining balance will be sent to:\n{}\n\nand this account will be closed.",
                     address_to_str(&close, &mut buf),
                 );
-                danger_gate("Close account", body, "confirm_close", "Close account")?;
+                danger_gate(tr!("algorand__title_close_account"), body, "confirm_close", tr!("algorand__title_close_account"))?;
             }
         }
         TransactionType::AssetTransfer => {
@@ -237,7 +237,7 @@ pub fn run_danger_gates(txn: &Transaction<'_>) -> Result<()> {
                     "Your entire balance of this asset will be sent to:\n{}",
                     address_to_str(&close, &mut buf),
                 );
-                danger_gate("Close out asset", body, "confirm_close_asset", "Close out")?;
+                danger_gate(tr!("algorand__title_close_asset"), body, "confirm_close_asset", tr!("algorand__close_out"))?;
             }
         }
         _ => {}
@@ -251,10 +251,10 @@ pub fn run_danger_gates(txn: &Transaction<'_>) -> Result<()> {
 /// that the details are being blind-signed.
 pub fn confirm_blind_signing() -> Result<()> {
     danger_gate(
-        "Blind signing",
-        "This app call includes arguments and references that are not fully shown on this device. Only continue if you trust the source.",
+        tr!("algorand__title_blind_signing"),
+        tr!("algorand__blind_signing_warning"),
         "confirm_blind",
-        "I understand",
+        tr!("algorand__i_understand"),
     )
 }
 

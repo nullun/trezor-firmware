@@ -32,7 +32,7 @@ pub fn confirm_asset_transfer(
     let title: &str = if total > 1 {
         uformat!(&mut title_buf, "Asset xfer {} of {}", index + 1, total)
     } else {
-        "Confirm asset transfer"
+        tr!("algorand__title_asset_transfer")
     };
 
     let mut asset_id_buf = [0u8; strutil::U64_LEN];
@@ -47,16 +47,16 @@ pub fn confirm_asset_transfer(
     let mut asnd_buf = [0u8; ADDRESS_LEN];
 
     let mut props = PropVec::<6>::new();
-    props.push(Property::new("Asset ID", asset_id_str, false));
-    props.push(Property::new("Amount", amount_str, false));
-    props.push(Property::new("Fee", fee_str, false));
-    props.push(Property::new("From", from, true));
+    props.push(Property::new(tr!("algorand__asset_id"), asset_id_str, false));
+    props.push(Property::new(tr!("words__amount"), amount_str, false));
+    props.push(Property::new(tr!("algorand__fee"), fee_str, false));
+    props.push(Property::new(tr!("algorand__from"), from, true));
     if let Some(rcv) = receiver {
-        props.push(Property::new("To", address_to_str(&rcv, &mut to_buf), true));
+        props.push(Property::new(tr!("algorand__to"), address_to_str(&rcv, &mut to_buf), true));
     }
     if let Some(asnd) = asset_sender {
         props.push(Property::new(
-            "Clawback from",
+            tr!("algorand__clawback_from"),
             address_to_str(&asnd, &mut asnd_buf),
             true,
         ));

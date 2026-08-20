@@ -38,7 +38,7 @@ pub fn confirm_asset_config(
         let title: &str = if is_group {
             uformat!(&mut title_buf, "Asset create {} of {}", index + 1, total)
         } else {
-            "Confirm asset creation"
+            tr!("algorand__title_asset_create")
         };
 
         let mut mgr_buf = [0u8; ADDRESS_LEN];
@@ -49,37 +49,37 @@ pub fn confirm_asset_config(
         let mut decimals_buf = [0u8; strutil::U64_LEN];
 
         let mut props = PropVec::<12>::new();
-        props.push(Property::new("Fee", fee_str, false));
-        props.push(Property::new("From", from, true));
+        props.push(Property::new(tr!("algorand__fee"), fee_str, false));
+        props.push(Property::new(tr!("algorand__from"), from, true));
         if let Some(p) = params {
             if let Some(name) = p.asset_name() {
                 props.push(Property::new(
-                    "Name",
+                    tr!("algorand__name"),
                     core::str::from_utf8(name).unwrap_or("<non-utf8>"),
                     false,
                 ));
             }
             if let Some(un) = p.unit_name() {
                 props.push(Property::new(
-                    "Unit",
+                    tr!("algorand__unit"),
                     core::str::from_utf8(un).unwrap_or("<non-utf8>"),
                     false,
                 ));
             }
             if p.total() != 0 {
                 let total_str = uformat!(&mut total_buf, "{}", p.total());
-                props.push(Property::new("Total", total_str, false));
+                props.push(Property::new(tr!("algorand__total"), total_str, false));
             }
             if p.decimals() != 0 {
                 let decimals_str = uformat!(&mut decimals_buf, "{}", p.decimals());
-                props.push(Property::new("Decimals", decimals_str, false));
+                props.push(Property::new(tr!("algorand__decimals"), decimals_str, false));
             }
             if p.default_frozen() {
-                props.push(Property::new("Default frozen", "yes", false));
+                props.push(Property::new(tr!("algorand__default_frozen"), tr!("algorand__yes"), false));
             }
             if let Some(url) = p.url() {
                 props.push(Property::new(
-                    "URL",
+                    tr!("algorand__url"),
                     core::str::from_utf8(url).unwrap_or("<non-utf8>"),
                     false,
                 ));
@@ -89,24 +89,24 @@ pub fn confirm_asset_config(
             // reconfigure omitting a role *removes* it irreversibly — either
             // way the user must see the gap, not have it silently hidden.
             if let Some(m) = p.manager() {
-                props.push(Property::new("Manager", address_to_str(&m, &mut mgr_buf), true));
+                props.push(Property::new(tr!("algorand__manager"), address_to_str(&m, &mut mgr_buf), true));
             } else {
-                props.push(Property::new("Manager", "Empty", false));
+                props.push(Property::new(tr!("algorand__manager"), tr!("algorand__role_empty"), false));
             }
             if let Some(r) = p.reserve() {
-                props.push(Property::new("Reserve", address_to_str(&r, &mut rsv_buf), true));
+                props.push(Property::new(tr!("algorand__reserve"), address_to_str(&r, &mut rsv_buf), true));
             } else {
-                props.push(Property::new("Reserve", "Empty", false));
+                props.push(Property::new(tr!("algorand__reserve"), tr!("algorand__role_empty"), false));
             }
             if let Some(f) = p.freeze() {
-                props.push(Property::new("Freeze", address_to_str(&f, &mut frz_buf), true));
+                props.push(Property::new(tr!("algorand__freeze"), address_to_str(&f, &mut frz_buf), true));
             } else {
-                props.push(Property::new("Freeze", "Empty", false));
+                props.push(Property::new(tr!("algorand__freeze"), tr!("algorand__role_empty"), false));
             }
             if let Some(c) = p.clawback() {
-                props.push(Property::new("Clawback", address_to_str(&c, &mut clw_buf), true));
+                props.push(Property::new(tr!("algorand__clawback"), address_to_str(&c, &mut clw_buf), true));
             } else {
-                props.push(Property::new("Clawback", "Empty", false));
+                props.push(Property::new(tr!("algorand__clawback"), tr!("algorand__role_empty"), false));
             }
         }
 
@@ -117,7 +117,7 @@ pub fn confirm_asset_config(
         let title: &str = if is_group {
             uformat!(&mut title_buf, "Asset config {} of {}", index + 1, total)
         } else {
-            "Confirm asset reconfiguration"
+            tr!("algorand__title_asset_reconfigure")
         };
 
         let mut caid_buf = [0u8; strutil::U64_LEN];
@@ -128,33 +128,33 @@ pub fn confirm_asset_config(
         let mut clw_buf = [0u8; ADDRESS_LEN];
 
         let mut props = PropVec::<7>::new();
-        props.push(Property::new("Asset ID", caid_str, false));
-        props.push(Property::new("Fee", fee_str, false));
-        props.push(Property::new("From", from, true));
+        props.push(Property::new(tr!("algorand__asset_id"), caid_str, false));
+        props.push(Property::new(tr!("algorand__fee"), fee_str, false));
+        props.push(Property::new(tr!("algorand__from"), from, true));
         if let Some(p) = params {
             // Show every role, with "Empty" when absent. On create an empty
             // role is permanently disabled (e.g. no freeze/clawback); on
             // reconfigure omitting a role *removes* it irreversibly — either
             // way the user must see the gap, not have it silently hidden.
             if let Some(m) = p.manager() {
-                props.push(Property::new("Manager", address_to_str(&m, &mut mgr_buf), true));
+                props.push(Property::new(tr!("algorand__manager"), address_to_str(&m, &mut mgr_buf), true));
             } else {
-                props.push(Property::new("Manager", "Empty", false));
+                props.push(Property::new(tr!("algorand__manager"), tr!("algorand__role_empty"), false));
             }
             if let Some(r) = p.reserve() {
-                props.push(Property::new("Reserve", address_to_str(&r, &mut rsv_buf), true));
+                props.push(Property::new(tr!("algorand__reserve"), address_to_str(&r, &mut rsv_buf), true));
             } else {
-                props.push(Property::new("Reserve", "Empty", false));
+                props.push(Property::new(tr!("algorand__reserve"), tr!("algorand__role_empty"), false));
             }
             if let Some(f) = p.freeze() {
-                props.push(Property::new("Freeze", address_to_str(&f, &mut frz_buf), true));
+                props.push(Property::new(tr!("algorand__freeze"), address_to_str(&f, &mut frz_buf), true));
             } else {
-                props.push(Property::new("Freeze", "Empty", false));
+                props.push(Property::new(tr!("algorand__freeze"), tr!("algorand__role_empty"), false));
             }
             if let Some(c) = p.clawback() {
-                props.push(Property::new("Clawback", address_to_str(&c, &mut clw_buf), true));
+                props.push(Property::new(tr!("algorand__clawback"), address_to_str(&c, &mut clw_buf), true));
             } else {
-                props.push(Property::new("Clawback", "Empty", false));
+                props.push(Property::new(tr!("algorand__clawback"), tr!("algorand__role_empty"), false));
             }
         }
 
@@ -165,15 +165,15 @@ pub fn confirm_asset_config(
         let title: &str = if is_group {
             uformat!(&mut title_buf, "Asset destroy {} of {}", index + 1, total)
         } else {
-            "Confirm asset destruction"
+            tr!("algorand__title_asset_destroy")
         };
 
         let mut caid_buf = [0u8; strutil::U64_LEN];
         let caid_str = uformat!(&mut caid_buf, "{}", caid);
         let props = [
-            Property::new("Destroy asset", caid_str, false),
-            Property::new("Fee", fee_str, false),
-            Property::new("From", from, true),
+            Property::new(tr!("algorand__destroy_asset"), caid_str, false),
+            Property::new(tr!("algorand__fee"), fee_str, false),
+            Property::new(tr!("algorand__from"), from, true),
         ];
 
         common::finalize(title, &props, "confirm_asset_config", txn, total, ctx)

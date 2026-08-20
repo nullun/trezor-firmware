@@ -34,6 +34,10 @@ ufmt = { version = "0.2.0", default-features = false }
 # neither prost nor prost-build is needed.
 tiny-algo = { git = "https://github.com/nullun/tiny-algo", rev = "7cbffce54ecf33a1c3fff747fb2508873d1b2dd5", default-features = false, features = ["payment", "keyreg", "asset-transfer", "asset-freeze", "asset-config", "application", "validate", "base64"] }
 
+[build-dependencies]
+serde = { version = "=1.0.145", features = ["derive"] }
+serde_json = "1"
+
 [dev-dependencies]
 tiny-algo = { git = "https://github.com/nullun/tiny-algo", rev = "7cbffce54ecf33a1c3fff747fb2508873d1b2dd5", default-features = false, features = ["payment", "keyreg", "asset-transfer", "asset-freeze", "asset-config", "application", "write", "validate", "base64"] }
 

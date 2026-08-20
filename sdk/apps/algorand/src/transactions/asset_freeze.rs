@@ -49,11 +49,15 @@ pub fn confirm_asset_freeze(
     let mut acct_buf = [0u8; ADDRESS_LEN];
 
     let mut props = PropVec::<4>::new();
-    props.push(Property::new("Asset ID", asset_id_str, false));
-    props.push(Property::new("Fee", fee_str, false));
-    props.push(Property::new("From", from, true));
+    props.push(Property::new(tr!("algorand__asset_id"), asset_id_str, false));
+    props.push(Property::new(tr!("algorand__fee"), fee_str, false));
+    props.push(Property::new(tr!("algorand__from"), from, true));
     if let Some(acct) = freeze_account {
-        let key = if frozen { "Freeze account" } else { "Unfreeze account" };
+        let key = if frozen {
+            tr!("algorand__freeze_account")
+        } else {
+            tr!("algorand__unfreeze_account")
+        };
         props.push(Property::new(key, address_to_str(&acct, &mut acct_buf), true));
     }
 
