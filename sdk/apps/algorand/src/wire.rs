@@ -13,7 +13,7 @@
 //! the outer Vec, plus the encode_to_vec output) — ~18 small heap ops
 //! per signing call, replaced with one stack write loop.
 //!
-//! Wire shape is unchanged — `protob/messages-algorand.proto` is the
+//! Wire shape is unchanged — `protob/algorand.proto` is the
 //! spec. The host still encodes via the typed builders in
 //! `scripts/algorand_messages.py`, exercised end-to-end by
 //! `scripts/test_*.py`.

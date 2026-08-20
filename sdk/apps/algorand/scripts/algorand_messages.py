@@ -2,14 +2,14 @@
 
 The Algorand app exchanges its inner request/response bodies inside the
 opaque `data` field of `TrezorAppMessage`/`TrezorAppResponse`. Those bodies use
-the schema in `../protob/messages-algorand.proto`. The schema is not
+the schema in `../protob/algorand.proto`. The schema is not
 registered with the firmware's `MessageType` enum because extapps don't
 need a firmware-known wire ID, so `trezorlib.messages` doesn't carry
 typed builders for them. We declare them here against the in-repo
 encoder so the test scripts stay self-contained and don't pull anything
 firmware-side.
 
-Keep field tags and types in sync with `messages-algorand.proto`.
+Keep field tags and types in sync with `algorand.proto`.
 """
 
 from typing import Optional, Sequence

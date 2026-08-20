@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package algorand;
+package hw.trezor.algorand;
 
 /**
  * Request: Get raw ed25519 public key for the given BIP-32 path.
