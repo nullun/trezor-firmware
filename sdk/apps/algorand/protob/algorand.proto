@@ -51,8 +51,8 @@ message AlgorandSignTransactions {
 	repeated uint32 address_n = 1;
 	// Concatenated canonical msgpack of 1..=16 unsigned transactions.
 	// When `total_size` is set and larger than this field, this is only
-	// the first chunk and the host streams the rest via
-	// AlgorandContinueSignTransactions.
+	// the first chunk and the device pulls the rest by sending
+	// AlgorandTxRequest until the accumulated payload reaches the total.
 	required bytes transactions = 2;
 	// Total byte length of the full transaction payload. Present only for
 	// chunked uploads; absent for single-message requests.
@@ -67,21 +67,32 @@ message AlgorandSignTransactions {
 }
 
 /**
+ * Response: Device requests the next chunk of a chunked transaction upload.
+ *
+ * Sent by the device while the accumulated payload is short of the
+ * `total_size` advertised in the opening AlgorandSignTransactions. The host
+ * answers with an AlgorandTxAck carrying at most `data_length` more bytes.
+ * @next AlgorandTxAck
+ */
+message AlgorandTxRequest {
+	// Maximum number of payload bytes the device accepts in the next ack.
+	required uint32 data_length = 1;
+}
+
+/**
  * Request: Next chunk of a chunked transaction upload.
  *
- * Sent in response to an AlgorandContinueSignTransactions reply from the
- * device, until the accumulated payload reaches the `total_size`
- * advertised in the opening AlgorandSignTransactions.
- * @next AlgorandContinueSignTransactions
+ * Sent in response to an AlgorandTxRequest, until the accumulated payload
+ * reaches the `total_size` advertised in the opening
+ * AlgorandSignTransactions.
+ * @next AlgorandTxRequest
  * @next AlgorandTransactionSignatures
  * @next Failure
  */
-message AlgorandContinueSignTransactions {
-	// Next chunk of canonical msgpack transaction bytes. Optional because the
-	// device reuses this message id as an empty "send the next chunk" signal in
-	// the response direction; the host always sets it on a request, and the
-	// device enforces its presence when decoding a request (see mod wire).
-	optional bytes data = 1;
+message AlgorandTxAck {
+	// Next chunk of canonical msgpack transaction bytes; at most the
+	// requested data_length, and never past the advertised total_size.
+	required bytes data = 1;
 }
 
 /**

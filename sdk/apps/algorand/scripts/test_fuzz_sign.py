@@ -59,7 +59,8 @@ from trezorlib.transport import get_transport
 sys.path.insert(0, str(Path(__file__).parent))
 from algorand_messages import (
     AlgorandSignTransactions,
-    AlgorandContinueSignTransactions,
+    AlgorandTxAck,
+    AlgorandTxRequest,
     AlgorandTransactionSignatures,
 )
 from app_loader import add_app_args, load_app
@@ -504,8 +505,9 @@ def send_and_sign(session, instance_id: int, txns: list[bytes]) -> list[bytes]:
 
     Auto-confirms every review screen via the debug input flow, so the fuzzer
     runs unattended. Large payloads are split via the chunked-upload protocol:
-    SignTransactions (first chunk + total_size), then ContinueSignTransactions
-    for the rest; the device replies TransactionSignatures on the final chunk.
+    SignTransactions carries the first chunk plus total_size, then the device
+    pulls the rest with TxRequest, each answered by a TxAck; it replies
+    TransactionSignatures once the advertised total has arrived.
     """
     payload = b"".join(txns)
     total = len(payload)
@@ -533,15 +535,17 @@ def send_and_sign(session, instance_id: int, txns: list[bytes]) -> list[bytes]:
         resp = session.call(envelope, expect=messages.TrezorAppResponse)
 
         offset = CHUNK_SIZE
-        while offset < total:
-            next_chunk = payload[offset: offset + CHUNK_SIZE]
+        while resp.message_id == 4:  # TxRequest
+            tx_request = protobuf.load_message(io.BytesIO(resp.data), AlgorandTxRequest)
+            size = min(tx_request.data_length, CHUNK_SIZE)
+            next_chunk = payload[offset: offset + size]
             offset += len(next_chunk)
-            chunk_req = AlgorandContinueSignTransactions(data=next_chunk)
+            ack = AlgorandTxAck(data=next_chunk)
             buf = io.BytesIO()
-            protobuf.dump_message(buf, chunk_req)
+            protobuf.dump_message(buf, ack)
             envelope = messages.TrezorAppMessage(
                 instance_id=instance_id,
-                message_id=4,  # ContinueSignTransactions
+                message_id=5,  # TxAck
                 data=buf.getvalue(),
             )
             resp = session.call(envelope, expect=messages.TrezorAppResponse)

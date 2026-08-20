@@ -1,4 +1,4 @@
-//! Hand-rolled protobuf codec for the four Algorand wire messages.
+//! Hand-rolled protobuf codec for the Algorand wire messages.
 //!
 //! Request decoders replace prost-generated `Message::decode` so
 //! `AlgorandSignTransactions.transactions` becomes a borrowed `&[u8]`
@@ -59,8 +59,8 @@ pub struct AlgorandSignTransactions<'a> {
     pub address_n: AddressN,
     /// First chunk of transaction data (borrowed from IPC payload).
     pub transactions: &'a [u8],
-    /// When present and > len(transactions), the host will send more
-    /// chunks via `ContinueSignTransactions` to reach this total.
+    /// When present and > len(transactions), the device pulls the rest
+    /// via `TxRequest`/`TxAck` until it holds this many bytes.
     pub total_size: Option<u32>,
     /// Bitmask of the group indices the host wants signatures for: bit `i`
     /// set means "sign member `i`". `0` (no `sign_indices` field) means
@@ -73,7 +73,7 @@ pub struct AlgorandSignTransactions<'a> {
     pub sign_mask: u16,
 }
 
-pub struct AlgorandContinueSignTransactions<'a> {
+pub struct AlgorandTxAck<'a> {
     pub data: &'a [u8],
 }
 
@@ -231,9 +231,7 @@ pub fn decode_sign_transactions(input: &[u8]) -> Result<AlgorandSignTransactions
     })
 }
 
-pub fn decode_continue_sign_transactions(
-    input: &[u8],
-) -> Result<AlgorandContinueSignTransactions<'_>> {
+pub fn decode_tx_ack(input: &[u8]) -> Result<AlgorandTxAck<'_>> {
     let mut buf = input;
     let mut data: Option<&[u8]> = None;
     while !buf.is_empty() {
@@ -245,12 +243,36 @@ pub fn decode_continue_sign_transactions(
             _ => skip_field(&mut buf, wire)?,
         }
     }
-    Ok(AlgorandContinueSignTransactions {
+    Ok(AlgorandTxAck {
         data: data.ok_or(Error::InvalidMessage)?,
     })
 }
 
 // --- encoders ------------------------------------------------------
+
+/// Maximum wire size of `AlgorandTxRequest`:
+///   (tag=0x08)(data_length varint, u32 ⇒ at most 5 bytes)
+pub const TX_REQUEST_LEN: usize = 1 + 5;
+
+/// Encode an `AlgorandTxRequest` asking the host for up to `data_length`
+/// more payload bytes, into the caller-provided buffer.
+pub fn encode_tx_request(out: &mut [u8; TX_REQUEST_LEN], data_length: u32) -> &[u8] {
+    out[0] = 0x08; // field 1, varint
+    let mut p = 1;
+    let mut v = data_length;
+    loop {
+        let byte = (v & 0x7f) as u8;
+        v >>= 7;
+        if v == 0 {
+            out[p] = byte;
+            p += 1;
+            break;
+        }
+        out[p] = byte | 0x80;
+        p += 1;
+    }
+    &out[..p]
+}
 
 /// Wire size of `AlgorandPublicKey` (94 bytes):
 ///   (tag=0x0A)(len=32)(public_key[32]) +

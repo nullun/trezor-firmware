@@ -51,7 +51,15 @@ class AlgorandSignTransactions(protobuf.MessageType):
     sign_indices: Sequence[int]
 
 
-class AlgorandContinueSignTransactions(protobuf.MessageType):
+class AlgorandTxRequest(protobuf.MessageType):
+    FIELDS = {
+        1: protobuf.Field("data_length", "uint32", repeated=False, required=True),
+    }
+
+    data_length: int
+
+
+class AlgorandTxAck(protobuf.MessageType):
     FIELDS = {
         1: protobuf.Field("data", "bytes", repeated=False, required=True),
     }

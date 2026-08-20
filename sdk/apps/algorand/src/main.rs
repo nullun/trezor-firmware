@@ -31,7 +31,7 @@ mod strutil;
 mod transactions;
 mod wire;
 
-use paths::{ALGORAND_PATH_LEN, check_path};
+use paths::check_path;
 use proto::{AlgorandMessages, ButtonRequestType};
 
 // The app's own logic is allocation-free: transactions are staged into fixed
@@ -299,28 +299,29 @@ fn fail_with(err: ValidateError) -> Result<()> {
     send_wire_error_dynamic(msg)
 }
 
-/// Chunked-upload state for large transaction payloads.
-static mut CHUNKED_UPLOAD: Option<ChunkedUpload> = None;
+/// Upper bound on the payload bytes requested per `AlgorandTxRequest` pull.
+/// The host's ack lands in the app's IPC inbox (16 KiB) while the message
+/// that opened the exchange may still be alive there, so ask for well under
+/// half of it.
+const TXACK_CHUNK_BYTES: usize = 8 * 1024;
 
-struct ChunkedUpload {
-    address_n: [u32; ALGORAND_PATH_LEN],
-    total: u32,
-    /// Bytes accumulated so far in `SIGN_STAGE[SIGN_PREFIX_LEN..]`.
-    len: u32,
-    sign_mask: u16,
-}
-
-/// Clear any in-flight chunked-upload state. The dispatcher calls this for
-/// every wire message except a `ContinueSignTransactions` continuation, so
-/// an abandoned upload from a prior host exchange can't bleed into a later,
-/// unrelated request. The staged bytes in `SIGN_STAGE` are left as-is; the
-/// next upload overwrites them from the front.
-fn reset_chunked_upload() {
-    // SAFETY: single-threaded extapp.
-    unsafe {
-        let ptr = core::ptr::addr_of_mut!(CHUNKED_UPLOAD);
-        (*ptr) = None;
+/// Ask the host for up to `want` more payload bytes and return its
+/// `AlgorandTxAck` reply. Blocks until the host answers — the same
+/// synchronous device-to-host request the reference apps use for their
+/// multi-round flows. The reply borrows the IPC inbox and is freed on drop.
+fn request_tx_chunk(want: usize) -> Result<IpcMessage<'static>> {
+    let mut req_buf = [0u8; wire::TX_REQUEST_LEN];
+    let req = wire::encode_tx_request(&mut req_buf, want as u32);
+    let message = IpcMessage::new(AlgorandMessages::TxRequest.into(), req);
+    let reply = CORE_SERVICE.call(
+        service::CoreIpcService::WireContinue,
+        &message,
+        Timeout::max(),
+    )?;
+    if AlgorandMessages::from(reply.id()) != AlgorandMessages::TxAck {
+        return Err(Error::InvalidMessage);
     }
+    Ok(reply)
 }
 
 fn handle_sign_transactions(request_data: &[u8]) -> Result<()> {
@@ -341,7 +342,11 @@ fn handle_sign_transactions(request_data: &[u8]) -> Result<()> {
         return Err(Error::DataError("Transaction payload exceeds maximum size"));
     }
 
-    // Chunked upload: if total_size > len(transactions), accumulate.
+    // Chunked upload: when total_size exceeds the first chunk, pull the
+    // rest from the host with TxRequest/TxAck before parsing. The whole
+    // exchange runs inside this handler, so no upload state outlives the
+    // wire message that started it.
+    let mut total_len = first_len;
     if let Some(total) = request.total_size {
         let total_usize = total as usize;
         if total_usize > MAX_TXN_GROUP_BYTES {
@@ -350,71 +355,27 @@ fn handle_sign_transactions(request_data: &[u8]) -> Result<()> {
         if total_usize < first_len {
             return Err(Error::DataError("Chunked upload total_size below first chunk"));
         }
-        if total_usize > first_len {
-            info!("Chunked upload: {} of {} bytes", first_len, total);
-            // The dispatcher already dropped any abandoned upload before
-            // reaching here, so the staging buffer is ours to claim.
-            // `check_path` guarantees address_n is exactly ALGORAND_PATH_LEN.
-            debug_assert_eq!(request.address_n.as_slice().len(), ALGORAND_PATH_LEN);
-            let mut addr = [0u32; ALGORAND_PATH_LEN];
-            addr.copy_from_slice(request.address_n.as_slice());
-            stage_body_write(0, request.transactions);
-            // SAFETY: single-threaded extapp.
-            unsafe {
-                let ptr = core::ptr::addr_of_mut!(CHUNKED_UPLOAD);
-                (*ptr) = Some(ChunkedUpload {
-                    address_n: addr,
-                    total,
-                    len: first_len as u32,
-                    sign_mask: request.sign_mask,
-                });
-            }
-            return send_wire_end(AlgorandMessages::ContinueSignTransactions, &[]);
-        }
+        total_len = total_usize;
     }
-    // Complete in one message: stage the payload and sign it.
     stage_body_write(0, request.transactions);
-    sign_transactions_inner(request.address_n.as_slice(), first_len, request.sign_mask)
-}
-
-fn handle_continue_sign_transactions(request_data: &[u8]) -> Result<()> {
-    let request = wire::decode_continue_sign_transactions(request_data)?;
-
-    // SAFETY: single-threaded extapp.  Use raw pointer to avoid
-    // creating a &mut to a mutable static (Rust 2024 forbids it).
-    let mut state = unsafe {
-        let ptr = core::ptr::addr_of_mut!(CHUNKED_UPLOAD);
-        match (*ptr).take() {
-            Some(s) => s,
-            None => return Err(Error::DataError("No chunked upload in progress")),
+    let mut got = first_len;
+    while got < total_len {
+        info!("Chunked upload: {} of {} bytes", got, total_len);
+        let want = (total_len - got).min(TXACK_CHUNK_BYTES);
+        let reply = request_tx_chunk(want)?;
+        let ack = wire::decode_tx_ack(reply.data())?;
+        // An empty ack makes no progress and would loop forever; a chunk
+        // past the advertised total would run off the staging region.
+        if ack.data.is_empty() {
+            return Err(Error::DataError("Empty transaction chunk"));
         }
-    };
-
-    // Enforce the declared size *before* staging. On entry `len < total`
-    // always holds (the equal/over branches consume the state), so
-    // `total - len` cannot underflow. Checking first stops a host from
-    // writing past the staging buffer with an oversized continuation chunk.
-    let total = state.total as usize;
-    let have = state.len as usize;
-    if request.data.len() > total - have {
-        return Err(Error::DataError("Chunked upload exceeded expected size"));
-    }
-    stage_body_write(have, request.data);
-    let got = have + request.data.len();
-    state.len = got as u32;
-    info!("Chunked upload: {} of {} bytes", got, total);
-
-    if got == total {
-        let addr = state.address_n;
-        let sign_mask = state.sign_mask;
-        sign_transactions_inner(&addr, total, sign_mask)
-    } else {
-        unsafe {
-            let ptr = core::ptr::addr_of_mut!(CHUNKED_UPLOAD);
-            (*ptr) = Some(state);
+        if ack.data.len() > total_len - got {
+            return Err(Error::DataError("Chunked upload exceeded expected size"));
         }
-        send_wire_end(AlgorandMessages::ContinueSignTransactions, &[])
+        stage_body_write(got, ack.data);
+        got += ack.data.len();
     }
+    sign_transactions_inner(request.address_n.as_slice(), total_len, request.sign_mask)
 }
 
 fn sign_transactions_inner(address_n: &[u32], total: usize, sign_mask: u16) -> Result<()> {
@@ -608,20 +569,9 @@ pub fn app() -> Result<()> {
 }
 
 fn handle_wire_message(message: &IpcMessage) -> Result<()> {
-    let id: AlgorandMessages = message.id().into();
-    // Only a continuation chunk may build on an in-flight upload; every
-    // other message (including a fresh SignTransactions, a key request, or
-    // an unknown id) abandons it, so a stale partial payload can't linger
-    // on the heap or be appended to by an unrelated request.
-    if id != AlgorandMessages::ContinueSignTransactions {
-        reset_chunked_upload();
-    }
-    match id {
+    match message.id().into() {
         AlgorandMessages::GetPublicKey => handle_get_public_key(message.data()),
         AlgorandMessages::SignTransactions => handle_sign_transactions(message.data()),
-        AlgorandMessages::ContinueSignTransactions => {
-            handle_continue_sign_transactions(message.data())
-        }
         _ => Err(Error::InvalidFunction),
     }
 }

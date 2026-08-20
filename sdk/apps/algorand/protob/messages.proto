@@ -17,5 +17,6 @@ enum MessageType {
   MessageType_AlgorandPublicKey                = 1;
   MessageType_AlgorandSignTransactions         = 2;
   MessageType_AlgorandTransactionSignatures    = 3;
-  MessageType_AlgorandContinueSignTransactions = 4;
+  MessageType_AlgorandTxRequest                = 4;
+  MessageType_AlgorandTxAck                    = 5;
 }

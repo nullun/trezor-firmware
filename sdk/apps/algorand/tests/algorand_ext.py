@@ -127,9 +127,11 @@ def sign_transactions(
 
     `transactions` is the full payload (one txn, or 2..=16 group members
     concatenated in canonical order). When `chunk_size` is given and smaller
-    than the payload, the payload is uploaded in chunks via
-    `AlgorandContinueSignTransactions`, exercising the device's chunked path;
-    otherwise it is sent in a single message.
+    than the payload, only the first `chunk_size` bytes are sent with the
+    opening message; the device then pulls the rest by responding with
+    `AlgorandTxRequest`, answered here with `AlgorandTxAck` chunks (capped at
+    both the device's requested `data_length` and `chunk_size`). Otherwise
+    the payload is sent in a single message.
 
     `sign_indices` selects a subset of the group to sign; when omitted the
     device signs every member.
@@ -147,7 +149,7 @@ def sign_transactions(
         )
 
     expect = [
-        algorand_messages.AlgorandContinueSignTransactions,
+        algorand_messages.AlgorandTxRequest,
         algorand_messages.AlgorandTransactionSignatures,
     ]
     first, rest = transactions[:chunk_size], transactions[chunk_size:]
@@ -162,12 +164,13 @@ def sign_transactions(
         ),
         expect=expect,
     )
-    while isinstance(resp, algorand_messages.AlgorandContinueSignTransactions):
-        chunk, rest = rest[:chunk_size], rest[chunk_size:]
+    while isinstance(resp, algorand_messages.AlgorandTxRequest):
+        size = min(resp.data_length, chunk_size)
+        chunk, rest = rest[:size], rest[size:]
         resp = call_ext(
             session,
             instance_id,
-            msg_data=algorand_messages.AlgorandContinueSignTransactions(data=chunk),
+            msg_data=algorand_messages.AlgorandTxAck(data=chunk),
             expect=expect,
         )
 

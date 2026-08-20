@@ -59,8 +59,8 @@ def test_algorand_sign_transactions(session: Session, instance_id: int, amount):
 @pytest.mark.parametrize("amount", [1_000_000], ids=["single_payment"])
 def test_algorand_sign_transactions_chunked(session: Session, instance_id: int, amount):
     """Same transaction uploaded in small chunks to exercise the device's
-    AlgorandContinueSignTransactions path; ed25519 signing is deterministic, so
-    the chunked upload must produce a signature that verifies identically."""
+    TxRequest/TxAck pull path; ed25519 signing is deterministic, so the
+    chunked upload must produce a signature that verifies identically."""
     path = parse_path(PATH)
     payload = vectors.encode(vectors.payment(amount))
     pk = algorand_ext.get_public_key(session, instance_id, path).public_key

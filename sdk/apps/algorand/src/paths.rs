@@ -25,8 +25,7 @@ pub const SLIP44_ALGORAND: u32 = HARDENED | 283;
 pub const PURPOSE_BIP44: u32 = HARDENED | 44;
 
 /// BIP-32 path length the Algorand app accepts:
-/// `m/44'/283'/account'/change'/index'`. Shared by `check_path` and the
-/// chunked-upload state so the path-buffer sizing tracks the validator.
+/// `m/44'/283'/account'/change'/index'`.
 pub const ALGORAND_PATH_LEN: usize = 5;
 
 /// Accept only the shape Pera Wallet and the Ledger Algorand app

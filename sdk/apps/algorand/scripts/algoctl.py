@@ -33,7 +33,8 @@ from trezorlib.tools import parse_path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from algorand_messages import (  # noqa: E402
-    AlgorandContinueSignTransactions,
+    AlgorandTxAck,
+    AlgorandTxRequest,
     AlgorandGetPublicKey,
     AlgorandPublicKey,
     AlgorandSignTransactions,
@@ -45,7 +46,8 @@ from app_loader import add_app_args, load_app  # noqa: E402
 MSG_GET_PUBLIC_KEY = 0
 MSG_SIGN_TRANSACTIONS = 2
 MSG_TRANSACTION_SIGNATURES = 3
-MSG_CONTINUE_SIGN_TRANSACTIONS = 4
+MSG_TX_REQUEST = 4
+MSG_TX_ACK = 5
 
 DEFAULT_PATH = "m/44'/283'/0'/0'/0'"
 
@@ -117,8 +119,8 @@ def cmd_sign(session, instance_id, args):
         )
         resp = _send(session, instance_id, MSG_SIGN_TRANSACTIONS, req, args.verbose)
     else:
-        # Chunked upload: first message declares total_size; the device acks
-        # each chunk with an (empty) ContinueSignTransactions until complete.
+        # Chunked upload: the first message declares total_size; the device
+        # then pulls the rest with TxRequest, each answered by a TxAck.
         chunk = args.chunk
         first, rest = payload[:chunk], payload[chunk:]
         req = AlgorandSignTransactions(
@@ -128,12 +130,12 @@ def cmd_sign(session, instance_id, args):
             sign_indices=sign_indices,
         )
         resp = _send(session, instance_id, MSG_SIGN_TRANSACTIONS, req, args.verbose)
-        while resp.message_id == MSG_CONTINUE_SIGN_TRANSACTIONS:
-            nxt, rest = rest[:chunk], rest[chunk:]
-            cont = AlgorandContinueSignTransactions(data=nxt)
-            resp = _send(
-                session, instance_id, MSG_CONTINUE_SIGN_TRANSACTIONS, cont, args.verbose
-            )
+        while resp.message_id == MSG_TX_REQUEST:
+            tx_request = protobuf.load_message(io.BytesIO(resp.data), AlgorandTxRequest)
+            size = min(tx_request.data_length, chunk)
+            nxt, rest = rest[:size], rest[size:]
+            ack = AlgorandTxAck(data=nxt)
+            resp = _send(session, instance_id, MSG_TX_ACK, ack, args.verbose)
 
     res = protobuf.load_message(io.BytesIO(resp.data), AlgorandTransactionSignatures)
     print(f"{len(res.signatures)} signature(s):")
