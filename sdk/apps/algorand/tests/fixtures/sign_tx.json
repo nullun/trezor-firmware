@@ -1,0 +1,296 @@
+{
+    "setup": {
+        "mnemonic": "all all all all all all all all all all all all",
+        "passphrase": ""
+    },
+    "tests": [
+        {
+            "name": "payment",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "88a3616d74ce000f4240a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3726376c420bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbba3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a3706179"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "19cfe6ef2631ba884d318b01f6a1089be4abcc897a31a3a619712b49a889e887846481bc1002527c2e4d015ab992b5304fefefea55a4d969c6989c6e13f63a0a",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "payment_close",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "89a3616d74ce000f4240a5636c6f7365c420c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3726376c420bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbba3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a3706179"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "de0e6c82316721c970134bf0aed952e5b5c03f60c8ded129b49acf412bf7cdbed495e666e32c5c5dfb3f521868138c5f5035c5334485f9020c225bc75ec47506",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "keyreg_online",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "8ca3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca673656c6b6579c4202020202020202020202020202020202020202020202020202020202020202020a3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa7737072666b6579c44030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030a474797065a66b6579726567a7766f746566737401a6766f74656b640aa7766f74656b6579c4201010101010101010101010101010101010101010101010101010101010101010a7766f74656c7374cd03e8"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "912bcd2437a972578efc33cd6dea2f88afa47b7de2b7db72c53781a7efe289954d6b1761838777840bfe8a92082bc11a9cf64a0b9ad416ad06205037a648a60e",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "keyreg_offline",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "86a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a66b6579726567"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "3c2d02944561963e624d857a6475a97bb61c91e415d53c061db10d098e92b02120e38e1f2bd2c164f510acffce58a104768aa0f3b49cfc8cc6a20b2be0ea9701",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "keyreg_nonpart",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "87a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca76e6f6e70617274c3a3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a66b6579726567"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "1ab663084effc7d4bf86accf940b07ffa5eaeb3bb4ffe0b3bb02908c85410a116e3a95a542d8e919e78599a42b584873d92f6836af7d735e9f61507237e0a40d",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "asset_transfer",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "89a461616d74cd1388a461726376c420bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbba3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a56178666572a478616964cd04d2"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "f8ebe11b81b0d8abddbd662a00f2f8fdc7d771d879900ee65a7ffa4b8e654d6322e43edfe755977b57c14a417f761c15739877425b59206de8e01d4d8995f202",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "asset_transfer_close",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "8aa461616d74cd1388a661636c6f7365c420c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6c6a461726376c420bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbba3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a56178666572a478616964cd04d2"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "0047d698c5399a13fd75e87b0f5c45989e9e484de34f9abf1103879d00b4a73cf21c4143a0418cd53dd8d72d3279a16ba327c9bbcf2c64369554660f087e350d",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "asset_freeze",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "89a46166727ac3a466616464c420c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7a466616964cd04d2a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a46166727a"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "f2c35ad55753fb071a06353af8e9039029ff8d4c77fb74fc7753bfe16ac6654f18500cc4cf4068d77bfe791c8d1ec3c85a0907b8a7c3aaac20fd681995030f02",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "asset_unfreeze",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "88a466616464c420c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7c7a466616964cd04d2a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a46166727a"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "9b6c6d8d2f55e2598b64e0f27367b62d633e456c922b2d6ed9757e2c78dbf95d12f6f52663534733bc4cc5f2fe3372e51e6ec81f1a930f52b9929ab94fbe8f06",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "asset_create",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "87a46170617289a2616eaa54657374204173736574a26175b968747470733a2f2f6578616d706c652e636f6d2f6173736574a163c420c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4a2646302a166c420c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3a16dc420c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1a172c420c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2a174ce000f4240a2756ea3544154a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a461636667"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "d02f33558d5544edb5aa4169b809048c18d74e795c723177bfd877011e6a42fa568b6a7958cb3ce27653d68edc43bcebd3ec335ac8ed64969c03a81df915fc0f",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "asset_reconfigure",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "88a46170617284a163c420c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4c4a166c420c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3a16dc420c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1a172c420c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2a463616964cd04d2a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a461636667"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "c7a08cd697b507430734cd1ea1466ad44ed79194e7518b76acff79559bcd376d5592fcaad65318ab6bb402bcc89bfc563a180b78f30642ba2c256e0618af0b0f",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "asset_destroy",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "87a463616964cd04d2a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a461636667"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "ca1bf0929a0190597997fb495f854ef241cb43a2768bf9097faf5b8ee1e8e81e8291df77e87b00d5fd6e74a2f54ea4ac9a444dd06df6f4a99555b29a82b9d005",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "app_create",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "89a461706170c4050a81012243a46170677382a36e627301a36e756901a461707375c4050a81012243a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a46170706c"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "2bf5d3e7891c150408aeea61c4635e784f5f584e78e9aced61390b4cd861c4f3f90a58b63ef04f6b6ed579b02a27ba218bef38433889d8d3cc27dda70e5f9204",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "app_call_blind",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "88a46170616192c4066d6574686f64c40101a461706964cd03e7a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a46170706c"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "8059f96500b0a8dd48619117c11d4190ec3c97898e43bfa05aa833c044912a6f198b41f0e9555c51c2e121ec7e6dd614c77d6bc888503a3763b75bbe11f1e803",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "rekey_payment",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "89a3616d74ce000f4240a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca3726376c420bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbba572656b6579c420c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5a3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a3706179"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "76e3c5856326b9752fb79fc1892747371de207e406c4c157707b1c943c1079db6e08dea36a4dafe64bf68040dc57091deef6cd442072ba6f12b77336c0e4480a",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "rekey_keyreg",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "87a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca572656b6579c420c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5a3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a66b6579726567"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "3a750cd53bba27df8c7dde4c72efb514eef94b4a4eae836840148afecb0ef4cf6286af39b616f449a19be72fd64f37abd737adebef7caead2ff77aae29ed4d0a",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "rekey_asset_transfer",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "8aa461616d74cd1388a461726376c420bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbba3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca572656b6579c420c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5a3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a56178666572a478616964cd04d2"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "14fbe3a7a91f0ea04f61290b1f4ab21e1c3aaa3dd001c1451ec348c420dda4588d324ab7dca464a9deffdd4ec65b03f214a62e9ec0b2a2a899574b12968ec300",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "rekey_app_call",
+            "parameters": {
+                "path": "m/44'/283'/0'/0'/0'",
+                "transactions": "88a461706964cd03e7a3666565cd03e8a2667664a26768c420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1fa26c76cd044ca572656b6579c420c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5a3736e64c420aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa474797065a46170706c"
+            },
+            "result": {
+                "signatures": [
+                    {
+                        "index": 0,
+                        "signature": "9bfb49601d80f20992db7cdcc4034a0564a1bf96956946308f8da39e7a3ebae5e13877bc8c4184b3f440c4efaa72ca31576f97f2f0efa73cc163e65c21de0e06",
+                        "auth_address": "02e3fa1b390b58126f2cf66bfa8e923a6bf3054e739b14c60bafeade016cc17e"
+                    }
+                ]
+            }
+        }
+    ]
+}

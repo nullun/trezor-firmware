@@ -27,10 +27,11 @@ import pytest
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from trezorlib.debuglink import DebugSession as Session
-from trezorlib.exceptions import TrezorFailure
+from trezorlib.exceptions import Cancelled, TrezorFailure
 from trezorlib.tools import parse_path
 
 from . import algorand_ext, signing, vectors
+from .input_flows import InputFlowSignTxCancel
 
 PATH = "m/44'/283'/0'/0'/0'"
 
@@ -66,6 +67,15 @@ def test_algorand_sign_transactions_chunked(session: Session, instance_id: int, 
     pk = algorand_ext.get_public_key(session, instance_id, path).public_key
     res = signing.sign(session, instance_id, path, payload, chunk_size=16)
     _verify(payload, res.signatures, pk)
+
+
+def test_algorand_sign_transactions_cancel(session: Session, instance_id: int):
+    """Rejecting the review screen cancels the whole flow."""
+    path = parse_path(PATH)
+    payload = vectors.encode(vectors.payment(1_000_000))
+    with pytest.raises(Cancelled), session.test_ctx as client:
+        client.set_input_flow(InputFlowSignTxCancel(client).get())
+        algorand_ext.sign_transactions(session, instance_id, path, payload)
 
 
 def test_algorand_sign_transactions_empty(session: Session, instance_id: int):

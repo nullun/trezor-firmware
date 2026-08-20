@@ -39,6 +39,9 @@ from trezorlib.testing.device_handler import BackgroundDeviceHandler
 from trezorlib.transport import enumerate_devices, get_transport
 from trezorlib.transport.ble import BleTransport
 
+# So that we see details of failed asserts from this module
+pytest.register_assert_rewrite("tests.input_flows")
+
 from . import ui_tests
 
 if t.TYPE_CHECKING:
