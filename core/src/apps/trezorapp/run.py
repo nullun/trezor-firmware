@@ -370,10 +370,13 @@ async def run(request: TrezorAppMessage) -> TrezorAppResponse:
                     scheme: int = obj[0]
                     address_n: list[int] = obj[1]
                     digest: bytes = obj[2]
-                    context: bytes | None = obj[3]
+                    # Named to avoid shadowing `trezor.wire.context` — a bare
+                    # `context` local here would make the WireContinue branch's
+                    # `context.call` an unbound local for the whole function.
+                    sign_context: bytes | None = obj[3]
                     try:
                         result = await _sign_digest_for_scheme(
-                            scheme, address_n, digest, context
+                            scheme, address_n, digest, sign_context
                         )
                         result_kind = _CRYPTO_RESULT_KIND_SIGNATURE
                     except:  # noqa: E722
